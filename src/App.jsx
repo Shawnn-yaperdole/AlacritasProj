@@ -1,13 +1,13 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import './App.css';
 
-// --- MOCK DATA ---
+// Sample Datas
 const MOCK_CLIENT_REQUESTS = [
   { id: 1, title: "Fix Leaking Sink", type: "Plumbing", date: "2023-10-25" },
   { id: 2, title: "Lawn Mowing", type: "Gardening", date: "2023-10-26" },
   { id: 3, title: "Install Ceiling Fan", type: "Electrical", date: "2023-10-27" },
+  { id: 4, title: "Paint Fence", type: "Painting", date: "2023-10-28" },
+  { id: 5, title: "Deep Clean House", type: "Cleaning", date: "2023-10-29" },
 ];
 
 const MOCK_PROVIDER_REQUESTS = [
@@ -16,12 +16,12 @@ const MOCK_PROVIDER_REQUESTS = [
   { id: 5, title: "Move Furniture", type: "Moving", client: "Charlie", loc: "Suburbs" },
 ];
 
-const MOCK_OFFERS_RECEIVED = [ // For Client
+const MOCK_OFFERS_RECEIVED = [
   { id: 101, title: "Offer for Sink", provider: "Mario Plumber", amount: "$50", status: "pending" },
   { id: 102, title: "Offer for Lawn", provider: "Green Thumb", amount: "$30", status: "accepted" },
 ];
 
-const MOCK_OFFERS_SENT = [ // For Provider
+const MOCK_OFFERS_SENT = [
   { id: 201, title: "Sink Repair Bid", client: "Alice", amount: "$50", status: "pending" },
   { id: 202, title: "Roof Repair Bid", client: "Dave", amount: "$500", status: "denied" },
 ];
@@ -29,11 +29,13 @@ const MOCK_OFFERS_SENT = [ // For Provider
 const CHATS = [
   { id: 1, name: "Mario Plumber", lastMsg: "I can be there at 5pm." },
   { id: 2, name: "Green Thumb", lastMsg: "Thanks for accepting!" },
+  { id: 3, name: "Electric Co.", lastMsg: "Do you have the parts?" },
 ];
 
+// ----------------------------------------------------------------------
 // --- COMPONENTS ---
+// ----------------------------------------------------------------------
 
-// 1. Sidebar Menu
 const Menu = ({ isOpen, close, logout }) => {
   if (!isOpen) return null;
   return (
@@ -50,32 +52,28 @@ const Menu = ({ isOpen, close, logout }) => {
   );
 };
 
-// 2. Landing Pages (Home)
 const ClientHome = () => {
   const [filterText, setFilterText] = useState("");
-  
-  const filteredRequests = MOCK_CLIENT_REQUESTS.filter(req => 
-    req.title.toLowerCase().includes(filterText.toLowerCase()) || 
-    req.type.toLowerCase().includes(filterText.toLowerCase())
+  const filtered = MOCK_CLIENT_REQUESTS.filter(req => 
+    req.title.toLowerCase().includes(filterText.toLowerCase())
   );
 
   return (
     <div className="page-container">
-      <h1>My Requests</h1>
-      <br />
+      <h2>My Current Requests</h2>
       <div className="controls">
         <input 
           className="search-input" 
-          placeholder="Search requests by keyword..." 
+          placeholder="Search my requests..." 
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
         />
-        <button className="action-btn filter">Filter Type</button>
+        <button className="action-btn filter">Filter Services</button>
         <button className="action-btn post">+ Post Request</button>
       </div>
 
       <div className="card-list">
-        {filteredRequests.map(req => (
+        {filtered.map(req => (
           <div key={req.id} className="card">
             <h3>{req.title}</h3>
             <span className="tag">{req.type}</span>
@@ -89,20 +87,17 @@ const ClientHome = () => {
 
 const ProviderHome = () => {
   const [filterText, setFilterText] = useState("");
-
-  const filteredRequests = MOCK_PROVIDER_REQUESTS.filter(req => 
-    req.title.toLowerCase().includes(filterText.toLowerCase()) ||
-    req.type.toLowerCase().includes(filterText.toLowerCase())
+  const filtered = MOCK_PROVIDER_REQUESTS.filter(req => 
+    req.title.toLowerCase().includes(filterText.toLowerCase())
   );
 
   return (
     <div className="page-container">
-      <h1>Requests in your Community</h1>
-      <br />
+      <h2>Requests in your Community</h2>
       <div className="controls">
         <input 
           className="search-input" 
-          placeholder="Search jobs..." 
+          placeholder="Search jobs in community..." 
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
         />
@@ -110,13 +105,13 @@ const ProviderHome = () => {
       </div>
 
       <div className="card-list">
-        {filteredRequests.map(req => (
+        {filtered.map(req => (
           <div key={req.id} className="card">
             <h3>{req.title}</h3>
             <span className="tag">{req.type}</span>
             <p>Client: {req.client}</p>
             <p>Location: {req.loc}</p>
-            <button style={{marginTop:'1rem', padding:'5px 10px', cursor:'pointer'}}>Send Offer</button>
+            <button style={{marginTop:'1rem', padding:'10px', width:'100%', cursor:'pointer', background:'#f0f0f0', border:'none', borderRadius:'4px'}}>Send Offer</button>
           </div>
         ))}
       </div>
@@ -124,15 +119,16 @@ const ProviderHome = () => {
   );
 };
 
-// 3. Messages Page (Shared Layout)
-const MessagesPage = ({ mode }) => {
+const MessagesPage = () => {
   const [activeChat, setActiveChat] = useState(null);
   const [search, setSearch] = useState("");
+  const layoutClass = activeChat ? 'show-chat' : 'show-list';
 
   return (
     <div className="page-container">
-      <div className="messages-layout">
-        {/* Left Side */}
+      <div className={`messages-layout ${layoutClass}`}>
+        
+
         <div className="chat-list">
           <div className="chat-header">
             <input 
@@ -143,27 +139,51 @@ const MessagesPage = ({ mode }) => {
               style={{width: '100%'}}
             />
           </div>
-          {CHATS.map(chat => (
-            <div 
-              key={chat.id} 
-              className={`chat-item ${activeChat === chat.id ? 'active' : ''}`}
-              onClick={() => setActiveChat(chat.id)}
-            >
-              <strong>{chat.name}</strong>
-              <p style={{fontSize:'0.8rem', color:'#666'}}>{chat.lastMsg}</p>
-            </div>
-          ))}
+          <div style={{flexGrow: 1, overflowY: 'auto'}}>
+            {CHATS.map(chat => (
+              <div 
+                key={chat.id} 
+                className={`chat-item ${activeChat === chat.id ? 'active' : ''}`}
+                onClick={() => setActiveChat(chat.id)}
+              >
+                <strong>{chat.name}</strong>
+                <p style={{fontSize:'0.85rem', color:'#666', marginTop:'4px'}}>{chat.lastMsg}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Right Side */}
+
         <div className="chat-window">
           {activeChat ? (
-            <div className="chat-content">
-              <h3>Conversation with {CHATS.find(c => c.id === activeChat).name}</h3>
-              {/* Chat bubbles would go here */}
-            </div>
+            <>
+              <div className="chat-window-header">
+                <button 
+                  onClick={() => setActiveChat(null)}
+                  style={{marginRight:'10px', background:'none', border:'none', fontSize:'1.2rem', cursor:'pointer'}}
+                >
+                  &larr;
+                </button>
+                <span>{CHATS.find(c => c.id === activeChat).name}</span>
+                <span></span> 
+              </div>
+              
+              <div className="chat-content">
+                <p style={{alignSelf:'center', color:'#aaa'}}>Start of conversation...</p>
+                <div style={{background:'#eee', padding:'10px', borderRadius:'10px', alignSelf:'flex-start', maxWidth:'70%', marginTop: '10px'}}>
+                  {CHATS.find(c => c.id === activeChat).lastMsg}
+                </div>
+              </div>
+              
+              <div className="chat-input-area">
+                <input className="chat-input" placeholder="Type a message..." />
+                <button className="action-btn post" style={{padding: '10px 15px'}}>Send</button>
+              </div>
+            </>
           ) : (
-            <div className="chat-content">Select a chat to view messages</div>
+            <div className="chat-content" style={{alignItems:'center', justifyContent:'center', color:'#aaa'}}>
+              <p>Select a Conversation</p>
+            </div>
           )}
         </div>
       </div>
@@ -171,17 +191,14 @@ const MessagesPage = ({ mode }) => {
   );
 };
 
-// 4. Offers Page
 const OffersPage = ({ mode }) => {
   const data = mode === 'client' ? MOCK_OFFERS_RECEIVED : MOCK_OFFERS_SENT;
   const [filterText, setFilterText] = useState("");
-
   const filtered = data.filter(item => item.title.toLowerCase().includes(filterText.toLowerCase()));
 
   return (
     <div className="page-container">
-      <h1>{mode === 'client' ? "Offers Received" : "My Sent Offers"}</h1>
-      <br />
+      <h2>{mode === 'client' ? "Offers Received 📬" : "Sent Offers 📤"}</h2>
       <div className="controls">
         <input 
           className="search-input" 
@@ -189,16 +206,19 @@ const OffersPage = ({ mode }) => {
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
         />
-        <button className="action-btn filter">Filter Service</button>
+        <button className="action-btn filter">Filter Status</button>
       </div>
 
       <div className="card-list">
         {filtered.map(offer => (
           <div key={offer.id} className="card">
-            <h3>{offer.title}</h3>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+              <h3>{offer.title}</h3>
+              <span className={`status ${offer.status}`} style={{margin:0}}>{offer.status.toUpperCase()}</span>
+            </div>
+            <hr style={{margin:'10px 0', border:'none', borderTop:'1px solid #eee'}}/>
             <p>{mode === 'client' ? `From: ${offer.provider}` : `To: ${offer.client}`}</p>
-            <p>Amount: {offer.amount}</p>
-            <span className={`status ${offer.status}`}>Status: {offer.status.toUpperCase()}</span>
+            <p style={{fontSize:'1.2rem', fontWeight:'bold', marginTop:'5px'}}>{offer.amount}</p>
           </div>
         ))}
       </div>
@@ -206,82 +226,60 @@ const OffersPage = ({ mode }) => {
   );
 };
 
+// ----------------------------------------------------------------------
 // --- MAIN APP COMPONENT ---
+// ----------------------------------------------------------------------
 
 function App() {
-  // States
-  const [userMode, setUserMode] = useState('client'); // 'client' or 'provider'
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'messages', 'offers'
+  const [userMode, setUserMode] = useState('client'); 
+  const [currentView, setCurrentView] = useState('home'); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Handlers
   const toggleMode = () => {
-    const newMode = userMode === 'client' ? 'provider' : 'client';
-    setUserMode(newMode);
-    setCurrentView('home'); // Reset to landing page on switch
+    setUserMode(prev => prev === 'client' ? 'provider' : 'client');
+    setCurrentView('home'); 
   };
 
   const renderContent = () => {
     switch (currentView) {
-      case 'home':
-        return userMode === 'client' ? <ClientHome /> : <ProviderHome />;
-      case 'messages':
-        return <MessagesPage mode={userMode} />;
-      case 'offers':
-        return <OffersPage mode={userMode} />;
-      default:
-        return <ClientHome />;
+      case 'home': return userMode === 'client' ? <ClientHome /> : <ProviderHome />;
+      case 'messages': return <MessagesPage />;
+      case 'offers': return <OffersPage mode={userMode} />;
+      default: return <ClientHome />;
     }
   };
+
+  const themeColor = userMode === 'client' ? 'var(--primary-client)' : 'var(--primary-provider)';
 
   return (
     <div className="App">
       {/* HEADER */}
-      <header className="header" style={{ borderBottom: `4px solid ${userMode === 'client' ? 'var(--primary-client)' : 'var(--primary-provider)'}`}}>
-        <div className="logo" style={{ color: userMode === 'client' ? 'var(--primary-client)' : 'var(--primary-provider)' }}>
-          JobBidder <span style={{fontSize:'0.8rem', color:'#333'}}>({userMode.toUpperCase()})</span>
+      <header className="header" style={{ borderBottom: `4px solid ${themeColor}`}}>
+        <div className="logo" style={{ color: themeColor }}>
+          Alacritas <small style={{color:'#333'}}>({userMode === 'client' ? 'Client' : 'Provider'})</small>
         </div>
 
         <nav className="nav-middle">
-          <button 
-            className={`nav-btn ${currentView === 'home' ? 'active' : ''}`}
-            onClick={() => setCurrentView('home')}
-          >
-            Home
-          </button>
-          <button 
-            className={`nav-btn ${currentView === 'messages' ? 'active' : ''}`}
-            onClick={() => setCurrentView('messages')}
-          >
-            Messages
-          </button>
-          <button 
-            className={`nav-btn ${currentView === 'offers' ? 'active' : ''}`}
-            onClick={() => setCurrentView('offers')}
-          >
-            Offers
-          </button>
+          <button className={`nav-btn ${currentView === 'home' ? 'active' : ''}`} onClick={() => setCurrentView('home')}>Home</button>
+          <button className={`nav-btn ${currentView === 'messages' ? 'active' : ''}`} onClick={() => setCurrentView('messages')}>Messages</button>
+          <button className={`nav-btn ${currentView === 'offers' ? 'active' : ''}`} onClick={() => setCurrentView('offers')}>Offers</button>
         </nav>
 
         <div className="nav-right">
           <button className="switch-btn" onClick={toggleMode}>
-            Switch to {userMode === 'client' ? 'Provider' : 'Client'} Mode
+            Switch to **{userMode === 'client' ? 'Provider' : 'Client'}**
           </button>
           <button className="menu-btn" onClick={() => setIsMenuOpen(true)}>☰</button>
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN CONTENT AREA */}
       <main>
         {renderContent()}
       </main>
 
-      {/* SIDEBAR MENU */}
-      <Menu 
-        isOpen={isMenuOpen} 
-        close={() => setIsMenuOpen(false)} 
-        logout={() => alert("Logged out")} 
-      />
+      {/* MENU SLIDE-OUT */}
+      <Menu isOpen={isMenuOpen} close={() => setIsMenuOpen(false)} logout={() => alert("Logged out")} />
     </div>
   );
 }

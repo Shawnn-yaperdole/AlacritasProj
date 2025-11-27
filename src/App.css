@@ -1,115 +1,160 @@
 :root {
-  --primary-client: #007bff; /* Blue for Client */
-  --primary-provider: #28a745; /* Green for Provider */
+  --primary-client: #007bff;
+  --primary-provider: #28a745;
   --bg-color: #f4f7f6;
   --text-dark: #333;
   --white: #ffffff;
   --border: #ddd;
 }
 
+/* 1. RESET & APP SHELL SETUP */
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
 
-body { background-color: var(--bg-color); color: var(--text-dark); }
+html, body, #root {
+  height: 100%; 
+  width: 100%;
+  overflow-x: hidden; /* Prevents horizontal scrollbar */
+}
 
-/* --- Header --- */
-.header {
+.App {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 2rem;
-  height: 70px;
-  background-color: var(--white);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.logo { font-weight: bold; font-size: 1.2rem; }
-
-.nav-middle { display: flex; gap: 2rem; }
-.nav-btn {
-  background: none;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  color: #666;
-  transition: 0.2s;
-}
-.nav-btn:hover { color: var(--text-dark); }
-.nav-btn.active {
-  font-weight: bold;
-  border-bottom: 3px solid #333;
+  flex-direction: column;
+  min-height: 100vh; /* Ensures app fills viewport height */
+  background-color: var(--bg-color);
   color: var(--text-dark);
 }
 
+/* 2. HEADER */
+.header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1.5rem;
+  height: 70px; 
+  background-color: var(--white);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+.logo { font-weight: bold; font-size: 1.2rem; white-space: nowrap; margin-right: 20px;}
+.nav-middle { display: flex; gap: 1rem; flex-grow: 1; justify-content: center; }
 .nav-right { display: flex; align-items: center; gap: 1rem; }
+
+.nav-btn {
+  background: none; border: none; font-size: 1rem; cursor: pointer; padding: 0.5rem 1rem;
+  color: #666; transition: 0.2s;
+}
+.nav-btn:hover, .nav-btn.active { color: var(--text-dark); font-weight: bold; }
+.nav-btn.active { border-bottom: 3px solid #333; }
+
 .switch-btn {
-  background: none;
-  border: 1px solid var(--border);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  cursor: pointer;
-  font-weight: 600;
+  background: none; border: 1px solid var(--border); padding: 0.5rem 1rem;
+  border-radius: 20px; cursor: pointer; font-weight: 600; white-space: nowrap;
 }
-.switch-btn:hover { background-color: #eee; }
+.menu-btn { font-size: 1.5rem; cursor: pointer; background: none; border: none; }
 
-.menu-btn { font-size: 1.5rem; cursor: pointer; background: none; border: none;}
+/* 3. MAIN CONTENT (Scrollable Area) */
+main {
+  flex-grow: 1; 
+  overflow-y: auto; 
+  position: relative;
+}
 
-/* --- Slide Out Menu --- */
-.menu-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5); z-index: 200;
+/* 4. LAYOUT CONTAINERS (Applies padding and centering) */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto; 
+  height: 100%;
+  padding: 1.5rem; /* Padding applied inside the centered container */
+  width: 100%; 
+  display: flex;
+  flex-direction: column;
 }
-.side-menu {
-  position: fixed; top: 0; right: 0; width: 300px; height: 100%;
-  background: var(--white); padding: 2rem;
-  display: flex; flex-direction: column; gap: 1rem;
-  animation: slideIn 0.3s ease-out;
-}
-@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-.menu-item { padding: 1rem; cursor: pointer; border-bottom: 1px solid #eee; }
-.menu-item:hover { background-color: #f9f9f9; }
-.close-menu { align-self: flex-end; cursor: pointer; font-size: 1.5rem; margin-bottom: 1rem; }
 
-/* --- Layouts --- */
-.page-container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-
-.controls {
-  display: flex; gap: 1rem; margin-bottom: 2rem; align-items: center;
-}
-.search-input { padding: 0.6rem; border: 1px solid var(--border); border-radius: 5px; flex-grow: 1; }
-.action-btn {
-  padding: 0.6rem 1.2rem; border: none; border-radius: 5px; color: white; cursor: pointer;
-}
+.controls { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;}
+.search-input { padding: 0.7rem; border: 1px solid var(--border); border-radius: 5px; flex-grow: 1; }
+.action-btn { padding: 0.7rem 1.2rem; border: none; border-radius: 5px; color: white; cursor: pointer; white-space: nowrap; }
 .action-btn.post { background-color: var(--primary-client); }
 .action-btn.filter { background-color: #666; }
 
-/* --- Cards (Requests/Offers) --- */
-.card-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+/* Cards (Home/Offers) */
+.card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+}
 .card {
   background: var(--white); padding: 1.5rem; border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid transparent;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-.card h3 { margin-bottom: 0.5rem; }
-.tag {
-  display: inline-block; padding: 0.25rem 0.5rem; background: #eee;
-  border-radius: 4px; font-size: 0.8rem; margin-bottom: 1rem;
-}
+.tag { display: inline-block; padding: 0.25rem 0.5rem; background: #eee; border-radius: 4px; font-size: 0.8rem; margin-bottom: 0.8rem; }
 .status { font-weight: bold; margin-top: 1rem; display: block; }
-.status.pending { color: orange; }
-.status.accepted { color: green; }
-.status.denied { color: red; }
+.status.pending { color: orange; } .status.accepted { color: green; } .status.denied { color: red; }
 
-/* --- Messages Page --- */
+/* 5. MESSAGES PAGE (Full Height Logic) */
 .messages-layout {
-  display: grid; grid-template-columns: 300px 1fr; height: 80vh;
-  background: var(--white); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  display: grid;
+  grid-template-columns: 320px 1fr; 
+  height: 100%; 
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
 }
-.chat-list { border-right: 1px solid var(--border); overflow-y: auto; }
-.chat-header { padding: 1rem; border-bottom: 1px solid var(--border); }
-.chat-item { padding: 1rem; border-bottom: 1px solid #eee; cursor: pointer; }
-.chat-item:hover, .chat-item.active { background-color: #f0f7ff; }
-.chat-window { display: flex; flex-direction: column; background-color: #fafafa; }
-.chat-content { flex-grow: 1; padding: 2rem; display: flex; align-items: center; justify-content: center; color: #888; }
+
+.chat-list { border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+.chat-header { padding: 1rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.chat-item { padding: 1rem; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+
+.chat-window { display: flex; flex-direction: column; height: 100%; background-color: #fafafa; }
+.chat-window-header { padding: 1rem; background: #fff; border-bottom: 1px solid var(--border); font-weight: bold; display: flex; align-items: center; justify-content: space-between; }
+.chat-content { flex-grow: 1; padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; }
+.chat-input-area { padding: 1rem; background: #fff; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+.chat-input { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+
+/* 6. SLIDE OUT MENU FIX */
+.menu-overlay { 
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+  background: rgba(0,0,0,0.5); z-index: 200; 
+  pointer-events: auto;
+}
+.side-menu { 
+  position: fixed; top: 0; right: 0; width: 300px; height: 100%; 
+  background: var(--white); padding: 2rem; 
+  display: flex; flex-direction: column; gap: 1rem; 
+  box-shadow: -4px 0 10px rgba(0,0,0,0.2);
+  transform: translateX(0); 
+  transition: transform 0.3s ease-out; /* Ensures smooth pop-out */
+}
+.close-menu { align-self: flex-end; cursor: pointer; font-size: 1.5rem; }
+
+
+/* 7. RESPONSIVE (Mobile specific overrides) */
+@media (max-width: 768px) {
+  .header { height: auto; padding: 10px; flex-wrap: wrap; gap: 10px; }
+  .nav-middle { order: 3; width: 100%; overflow-x: auto; justify-content: flex-start; padding-bottom: 5px; }
+  .nav-right { order: 2; margin-left: auto; }
+  
+  .page-container {
+      padding: 1rem; /* Adjust padding for smaller screens */
+  }
+
+  .messages-layout { display: block; height: calc(100vh - 140px); border: none; }
+  
+  .messages-layout.show-chat .chat-list { display: none; }
+  .messages-layout.show-list .chat-window { display: none; }
+
+  .chat-window-header button {
+    /* Only the mobile back button is visible on small screens */
+    display: inline-block !important; 
+  }
+}
+
+@media (min-width: 769px) {
+    /* Hide the mobile back button on desktop */
+    .chat-window-header button {
+      display: none;
+    }
+}
