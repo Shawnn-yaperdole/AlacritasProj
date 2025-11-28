@@ -1,24 +1,18 @@
 // src/App.jsx
-
 import React, { useState } from 'react';
 import './App.css';
-
-// Import your components
 import Header from './Global/Header';
 import Menu from './Global/Menu';
 import MessagesPage from './Global/Messages';
 import ClientHome from './Client/ClientHome';
-import OffersPage from './Global/Offers';
+import OffersPage from './Client/ClientOffers';
 
-// Example Provider Home component
-const ProviderHome = () => {
-  return (
-    <div className="page-container">
-      <h2>Provider Home</h2>
-      <p>Content for providers goes here.</p>
-    </div>
-  );
-};
+const ProviderHome = () => (
+  <div className="page-container bg-gray-100 p-6 rounded shadow-md">
+    <h2 className="text-3xl font-bold text-blue-500 mb-2">Provider Home</h2>
+    <p className="text-gray-700">Content for providers goes here.</p>
+  </div>
+);
 
 function App() {
   const [userMode, setUserMode] = useState('client');
@@ -27,25 +21,20 @@ function App() {
 
   const toggleMode = () => {
     setUserMode((prev) => (prev === 'client' ? 'provider' : 'client'));
-    setCurrentView('home'); // Reset view when switching mode
+    setCurrentView('home');
   };
 
   const renderContent = () => {
     switch (currentView) {
-      case 'home':
-        return userMode === 'client' ? <ClientHome /> : <ProviderHome />;
-      case 'messages':
-        return <MessagesPage />;
-      case 'offers':
-        return <OffersPage mode={userMode} />;
-      default:
-        return userMode === 'client' ? <ClientHome /> : <ProviderHome />;
+      case 'home': return userMode === 'client' ? <ClientHome /> : <ProviderHome />;
+      case 'messages': return <MessagesPage />; // Full width page
+      case 'offers': return <OffersPage mode={userMode} />;
+      default: return userMode === 'client' ? <ClientHome /> : <ProviderHome />;
     }
   };
 
   return (
-    <div className="App">
-      {/* Header */}
+    <div className="App flex flex-col w-full min-h-screen bg-gray-50">
       <Header
         userMode={userMode}
         toggleMode={toggleMode}
@@ -53,20 +42,20 @@ function App() {
         currentView={currentView}
         setCurrentView={setCurrentView}
       />
-
-      {/* Main content */}
-      <main className="main">
+      <main className="main w-full flex-1">
         {renderContent()}
       </main>
-
-      {/* Slide-out Menu */}
-      <Menu
-        isOpen={isMenuOpen}
-        close={() => setIsMenuOpen(false)}
-        logout={() => alert("Logged out")}
-      />
+      <Menu isOpen={isMenuOpen} close={() => setIsMenuOpen(false)} logout={() => alert('Logged out')} />
     </div>
   );
 }
 
 export default App;
+
+
+
+
+
+
+
+
