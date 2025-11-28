@@ -1,84 +1,69 @@
 // src/App.jsx
+
 import React, { useState } from 'react';
 import './App.css';
-import Header from './screens-components/Header.jsx'; 
-import Menu from './screens-components/Menu.jsx'; 
-import ClientHome from './screens-client/ClientHome.jsx'; 
-import ClientOffers from './screens-client/ClientOffers.jsx'; 
-import ClientMessages from './screens-components/Messages.jsx'; 
 
-// Sample Datas (MOCK DATA - leaving these here for now)
-const MOCK_PROVIDER_REQUESTS = [
-// ... data
-];
-const MOCK_OFFERS_SENT = [
-// ... data
-];
+// Import your components
+import Header from './Global/Header';
+import Menu from './Global/Menu';
+import MessagesPage from './Global/Messages';
+import ClientHome from './Client/ClientHome';
+import OffersPage from './Global/Offers';
 
-
-// --- Provider Screens (MOVED OUT LATER, but keeping the component code here for now) ---
-const ProviderHome = () => { /* ... component code ... */ };
-const ProviderOffers = () => { /* ... component code ... */ };
-
-
-// ----------------------------------------------------------------------
-// --- MAIN APP COMPONENT ---
-// ----------------------------------------------------------------------
+// Example Provider Home component
+const ProviderHome = () => {
+  return (
+    <div className="page-container">
+      <h2>Provider Home</h2>
+      <p>Content for providers goes here.</p>
+    </div>
+  );
+};
 
 function App() {
-  const [userMode, setUserMode] = useState('client'); 
-  const [currentView, setCurrentView] = useState('home'); 
+  const [userMode, setUserMode] = useState('client');
+  const [currentView, setCurrentView] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMode = () => {
-    // Navigate to the home page of the new mode after switching
-    const newMode = userMode === 'client' ? 'provider' : 'client';
-    setUserMode(newMode);
-    setCurrentView('home'); 
+    setUserMode((prev) => (prev === 'client' ? 'provider' : 'client'));
+    setCurrentView('home'); // Reset view when switching mode
   };
 
   const renderContent = () => {
-    // ... same state-based logic ...
-    if (userMode === 'client') {
-      switch (currentView) {
-        case 'home': return <ClientHome />;
-        case 'messages': return <ClientMessages />;
-        case 'offers': return <ClientOffers />;
-        default: return <ClientHome />;
-      }
-    } else { // userMode === 'provider'
-      switch (currentView) {
-        case 'home': return <ProviderHome />;
-        case 'messages': return <ClientMessages />; 
-        case 'offers': return <ProviderOffers />;
-        default: return <ProviderHome />;
-      }
+    switch (currentView) {
+      case 'home':
+        return userMode === 'client' ? <ClientHome /> : <ProviderHome />;
+      case 'messages':
+        return <MessagesPage />;
+      case 'offers':
+        return <OffersPage mode={userMode} />;
+      default:
+        return userMode === 'client' ? <ClientHome /> : <ProviderHome />;
     }
   };
 
-
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
-      {/* HEADER */}
-      <Header 
-      userMode={userMode} 
-      toggleMode={toggleMode} 
-      currentView={currentView} 
-      setCurrentView={setCurrentView} 
-      setIsMenuOpen={setIsMenuOpen} 
+    <div className="App">
+      {/* Header */}
+      <Header
+        userMode={userMode}
+        toggleMode={toggleMode}
+        setIsMenuOpen={setIsMenuOpen}
+        currentView={currentView}
+        setCurrentView={setCurrentView}
       />
-      
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-grow">
+
+      {/* Main content */}
+      <main className="main">
         {renderContent()}
       </main>
 
-      {/* MENU SLIDE-OUT */}
-      <Menu 
-        isOpen={isMenuOpen} 
-        close={() => setIsMenuOpen(false)} 
-        toggleMode={toggleMode} 
-        userMode={userMode}     
+      {/* Slide-out Menu */}
+      <Menu
+        isOpen={isMenuOpen}
+        close={() => setIsMenuOpen(false)}
+        logout={() => alert("Logged out")}
       />
     </div>
   );
