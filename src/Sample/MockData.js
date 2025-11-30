@@ -3,7 +3,6 @@
 // ==============================
 // CLIENT MOCK DATA
 // ==============================
-
 export const MOCK_CLIENT = {
   profilePic: "https://via.placeholder.com/200",
   fullName: "John Doe",
@@ -19,20 +18,22 @@ export const MOCK_CLIENT_REQUESTS = [
   {
     id: 1,
     title: "Fix Leaking Sink",
-    type: "Plumbing",
+    type: "Plumbing Forum",
     date: "2023-10-25",
     location: "123 Main St, Springfield",
     status: "accepted",
-    thumbnail: "https://via.placeholder.com/80x80?text=Sink",
+    description: "Sink in kitchen is leaking. Needs urgent repair.",
+    thumbnail: "https://via.placeholder.com/150x100?text=Sink",
   },
   {
     id: 2,
     title: "Lawn Mowing",
-    type: "Gardening",
+    type: "Gardening Club",
     date: "2023-10-26",
     location: "456 Elm St, Springfield",
     status: "pending",
-    thumbnail: "https://via.placeholder.com/80x80?text=Lawn",
+    description: "Backyard lawn needs mowing and trimming.",
+    thumbnail: "https://via.placeholder.com/150x100?text=Lawn",
   },
   {
     id: 3,
@@ -41,38 +42,42 @@ export const MOCK_CLIENT_REQUESTS = [
     date: "2023-10-27",
     location: "789 Oak St, Springfield",
     status: "accepted",
-    thumbnail: "https://via.placeholder.com/80x80?text=Fan",
+    description: "Install a ceiling fan in the living room.",
+    thumbnail: "https://via.placeholder.com/150x100?text=Fan",
   },
   {
     id: 4,
-    title: "Paint Living Room With Extra Long Description That Might Overflow",
-    type: "Painting",
+    title: "Paint Living Room",
+    type: "Painting Network",
     date: "2023-10-28",
     location: "321 Pine St, Springfield",
     status: "pending",
-    thumbnail: "https://via.placeholder.com/80x80?text=Paint",
+    description: "Full living room painting with prep work.",
+    thumbnail: "https://via.placeholder.com/150x100?text=Paint",
   },
 ];
 
 // ==============================
 // PROVIDER MOCK DATA
 // ==============================
-
 export const MOCK_PROVIDER = {
   profilePic: "https://via.placeholder.com/200",
   fullName: "Jane Smith",
   email: "jane@example.com",
   phone: "+987654321",
   location: "456 Oak St, Springfield",
-  communities: ["Electricians Hub", "Painting Network"],
+  communities: ["Electricians Hub", "Painting Network", "Plumbing Forum", "Gardening Club"],
   defaultCommunity: "Electricians Hub",
   bio: "Experienced provider ready to help!",
   skills: [
     { name: "Plumbing", verified: true },
     { name: "Electrical", verified: false },
     { name: "Painting", verified: true },
+    { name: "Gardening", verified: true },
   ],
 };
+
+
 
 // ==============================
 // OFFERS MOCK DATA
@@ -82,6 +87,7 @@ export const MOCK_PROVIDER = {
 export const MOCK_CLIENT_PENDING = [
   {
     id: 1,
+    requestId: 1, // link to "Fix Leaking Sink"
     title: "Leaky Faucet",
     provider: "Mario",
     amount: "$45",
@@ -93,6 +99,7 @@ export const MOCK_CLIENT_PENDING = [
 export const MOCK_CLIENT_ONGOING = [
   {
     id: 5,
+    requestId: 2, // link to "Lawn Mowing"
     title: "Garden Cleanup",
     provider: "Luigi",
     amount: "$70",
@@ -104,6 +111,7 @@ export const MOCK_CLIENT_ONGOING = [
 export const MOCK_CLIENT_HISTORY = [
   {
     id: 2,
+    requestId: 3, // link to "Install Ceiling Fan"
     title: "Toilet Repair",
     provider: "Luigi",
     amount: "$60",
@@ -116,6 +124,7 @@ export const MOCK_CLIENT_HISTORY = [
 export const MOCK_PROVIDER_PENDING = [
   {
     id: 3,
+    requestId: 2, // link to "Lawn Mowing"
     title: "Pipe Fix Offer",
     client: "Alice",
     amount: "$80",
@@ -127,6 +136,7 @@ export const MOCK_PROVIDER_PENDING = [
 export const MOCK_PROVIDER_ONGOING = [
   {
     id: 6,
+    requestId: 1, // link to "Fix Leaking Sink"
     title: "Window Repair",
     client: "Bob",
     amount: "$100",
@@ -138,6 +148,7 @@ export const MOCK_PROVIDER_ONGOING = [
 export const MOCK_PROVIDER_HISTORY = [
   {
     id: 4,
+    requestId: 3, // link to "Install Ceiling Fan"
     title: "Kitchen Sink",
     client: "Bob",
     amount: "$120",
@@ -149,7 +160,6 @@ export const MOCK_PROVIDER_HISTORY = [
 // ==============================
 // CHAT MOCK DATA
 // ==============================
-
 export const MOCK_CHATS = [
   { id: 1, name: "Mario Plumber", lastMsg: "I sent a new offer, let me know what you think.", avatar: "https://randomuser.me/api/portraits/men/32.jpg", lastMsgTime: "10:24 AM" },
   { id: 2, name: "Green Thumb", lastMsg: "Thanks for accepting!", avatar: "https://randomuser.me/api/portraits/women/44.jpg", lastMsgTime: "Yesterday" },
@@ -168,4 +178,3 @@ export const ACCEPTED_OFFER = {
   price: "₱1,500",
   fullDescriptionLink: "#"
 };
-

@@ -7,9 +7,10 @@ import {
   MOCK_PROVIDER_PENDING,
   MOCK_PROVIDER_ONGOING,
   MOCK_PROVIDER_HISTORY,
+  MOCK_CLIENT_REQUESTS
 } from "../Sample/MockData";
 
-const Offers = ({ role }) => {
+const Offers = ({ role, onViewOfferDetails }) => {
   const isClient = role === "client";
   const isProvider = role === "provider";
 
@@ -82,6 +83,7 @@ const Offers = ({ role }) => {
 
   return (
     <div className="page-container flex flex-col">
+
       {/* Bubble Tabs */}
       <div className="offers-tab-container mb-6">
         {tabs.map((tab) => (
@@ -96,70 +98,110 @@ const Offers = ({ role }) => {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-6 items-center">
         <input
           type="text"
           placeholder="Search offers..."
-          className="search-input flex-grow"
+          className="search-input flex-grow min-w-0"
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
         />
-        <button className="client-filter-btn">Filter Offers</button>
+        <button className="action-btn client-filter-btn flex-shrink-0">
+          Filter Offers
+        </button>
       </div>
 
       {/* Offer Cards */}
       <div className="card-list">
-        {filteredData.map((offer) => (
-          <div key={offer.id} className="offers-card flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold text-lg truncate">{offer.title}</h3>
-                <span className={statusColor(offer.status)}>{offer.status.toUpperCase()}</span>
-              </div>
-              <p className="truncate">{isClient ? `From: ${offer.provider}` : `To: ${offer.client}`}</p>
-              <p className="text-sm text-gray-600 truncate">{offer.description}</p>
-              <p className="font-semibold mt-2">{offer.amount}</p>
-            </div>
+        {filteredData.map((offer) => {
+          // Find the corresponding request
+          const request = MOCK_CLIENT_REQUESTS.find(r => r.id === offer.requestId);
 
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-2 mt-3">
-              {isClient && currentTab === "pending" && (
-                <div className="flex gap-2">
-                  <button
-                    className="action-btn accept-btn flex-1"
-                    onClick={() =>
-                      moveOffer(offer, clientPending, clientOngoing, setClientPending, setClientOngoing, "ongoing")
-                    }
-                  >
-                    Accept
-                  </button>
-                  <button
-                    className="action-btn decline-btn flex-1"
-                    onClick={() =>
-                      moveOffer(offer, clientPending, clientHistory, setClientPending, setClientHistory, "denied")
-                    }
-                  >
-                    Decline
-                  </button>
+          return (
+            <div key={offer.id} className="offers-card flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-semibold text-lg truncate">{offer.title}</h3>
+                  <span className={statusColor(offer.status)}>
+                    {offer.status.toUpperCase()}
+                  </span>
                 </div>
-              )}
 
-              {isProvider && currentTab === "pending" && (
+                <p className="truncate">
+                  {isClient ? `From: ${offer.provider}` : `To: ${offer.client}`}
+                </p>
+
+                <p className="text-sm text-gray-600 truncate">{offer.description}</p>
+                <p className="font-semibold mt-2">{offer.amount}</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2 mt-3">
+                {isClient && currentTab === "pending" && (
+                  <div className="flex gap-2">
+                    <button
+                      className="action-btn accept-btn flex-1"
+                      onClick={() =>
+                        moveOffer(
+                          offer,
+                          clientPending,
+                          clientOngoing,
+                          setClientPending,
+                          setClientOngoing,
+                          "ongoing"
+                        )
+                      }
+                    >
+                      Accept
+                    </button>
+
+                    <button
+                      className="action-btn decline-btn flex-1"
+                      onClick={() =>
+                        moveOffer(
+                          offer,
+                          clientPending,
+                          clientHistory,
+                          setClientPending,
+                          setClientHistory,
+                          "denied"
+                        )
+                      }
+                    >
+                      Decline
+                    </button>
+                  </div>
+                )}
+
+                {isProvider && currentTab === "pending" && (
+                  <button
+                    className="action-btn decline-btn w-full"
+                    onClick={() =>
+                      moveOffer(
+                        offer,
+                        providerPending,
+                        providerHistory,
+                        setProviderPending,
+                        setProviderHistory,
+                        "cancelled"
+                      )
+                    }
+                  >
+                    Cancel
+                  </button>
+                )}
+
+                {/* View Full Details */}
                 <button
-                  className="action-btn decline-btn w-full"
-                  onClick={() =>
-                    moveOffer(offer, providerPending, providerHistory, setProviderPending, setProviderHistory, "cancelled")
-                  }
+                  className="action-btn viewinfo-btn w-full"
+                  onClick={() => onViewOfferDetails(offer.id)}
                 >
-                  Cancel
+                  View Full Details
                 </button>
-              )}
-
-              {/* View Full Information Button */}
-              <button className="action-btn viewinfo-btn w-full">View Full Information</button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
