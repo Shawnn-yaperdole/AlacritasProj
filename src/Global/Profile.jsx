@@ -1,32 +1,6 @@
 // src/Global/Profile.jsx
-import React, { useState } from 'react';
-
-const MOCK_CLIENT = {
-  profilePic: "https://via.placeholder.com/200",
-  fullName: "John Doe",
-  email: "john@example.com",
-  phone: "+123456789",
-  location: "123 Main St, Springfield",
-  communities: ["Gardening Club", "Plumbing Forum"],
-  defaultCommunity: "Gardening Club",
-  bio: "Hello! I love connecting with providers to get things done.",
-};
-
-const MOCK_PROVIDER = {
-  profilePic: "https://via.placeholder.com/200",
-  fullName: "Jane Smith",
-  email: "jane@example.com",
-  phone: "+987654321",
-  location: "456 Oak St, Springfield",
-  communities: ["Electricians Hub", "Painting Network"],
-  defaultCommunity: "Electricians Hub",
-  bio: "Experienced provider ready to help!",
-  skills: [
-    { name: "Plumbing", verified: true },
-    { name: "Electrical", verified: false },
-    { name: "Painting", verified: true },
-  ],
-};
+import React, { useState } from "react";
+import { MOCK_CLIENT, MOCK_PROVIDER } from "../Sample/MockData";
 
 const Profile = ({ role }) => {
   const isClient = role === "client";
@@ -59,16 +33,11 @@ const Profile = ({ role }) => {
   };
 
   return (
-    <div className="profile-page flex flex-col md:flex-row justify-start w-full min-h-screen p-8 bg-gray-50 gap-12" style={{ paddingTop: '100px' }}>
+    <div className="profile-page flex flex-col md:flex-row justify-start w-full min-h-screen p-8 bg-gray-50 gap-12" style={{ paddingTop: "100px" }}>
       {/* Left: Profile Picture + Contact Info */}
       <div className="profile-left flex flex-col items-center gap-6 md:w-1/3">
-        {/* Profile Picture */}
         <div className="profile-pic-container relative">
-          <img
-            src={profilePic}
-            alt="profile"
-            className="profile-pic"
-          />
+          <img src={profilePic} alt="profile" className="profile-pic" />
           <button
             className="edit-pic-btn"
             onClick={() => {
@@ -80,23 +49,15 @@ const Profile = ({ role }) => {
           </button>
         </div>
 
-        {/* Contact Information */}
         <div className="contact-info flex flex-col gap-2 text-center md:text-left">
-          <div>
-            <strong>Email:</strong> {email}
-          </div>
-          <div>
-            <strong>Phone:</strong> {phone}
-          </div>
-          <div>
-            <strong>Location:</strong> {location}
-          </div>
+          <div><strong>Email:</strong> {email}</div>
+          <div><strong>Phone:</strong> {phone}</div>
+          <div><strong>Location:</strong> {location}</div>
         </div>
       </div>
 
       {/* Right: Main Info */}
       <div className="profile-right flex flex-col gap-6 md:w-2/3 text-center md:text-left">
-        {/* Full Name */}
         <h1 className="text-5xl font-bold">{fullName}</h1>
 
         {/* Communities */}
@@ -106,7 +67,7 @@ const Profile = ({ role }) => {
             {communities.map((c) => (
               <span
                 key={c}
-                className={`community-badge ${c === defaultCommunity ? 'default-community' : ''}`}
+                className={`community-badge ${c === defaultCommunity ? "default-community" : ""}`}
                 onClick={() => setDefaultCommunity(c)}
               >
                 {c} {c === defaultCommunity && "(Default)"}
@@ -152,10 +113,7 @@ const Profile = ({ role }) => {
 
         {/* Save Button */}
         <div className="flex justify-center md:justify-start">
-          <button
-            className="action-btn client-post-btn w-1/4 mt-4"
-            onClick={handleSave}
-          >
+          <button className="action-btn client-post-btn w-1/4 mt-4" onClick={handleSave}>
             Save Profile
           </button>
         </div>

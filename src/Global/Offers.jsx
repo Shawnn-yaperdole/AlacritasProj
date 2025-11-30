@@ -1,27 +1,13 @@
 // src/Global/Offers.jsx
-import React, { useState } from 'react';
-
-// Mock data for client
-const MOCK_CLIENT_PENDING = [
-  { id: 1, title: "Leaky Faucet", provider: "Mario", amount: "$45", status: "pending", description: "Fix the faucet in the kitchen sink." },
-];
-const MOCK_CLIENT_ONGOING = [
-  { id: 5, title: "Garden Cleanup", provider: "Luigi", amount: "$70", status: "ongoing", description: "Clean the backyard and trim hedges." },
-];
-const MOCK_CLIENT_HISTORY = [
-  { id: 2, title: "Toilet Repair", provider: "Luigi", amount: "$60", status: "accepted", description: "Repair leaking toilet." },
-];
-
-// Mock data for provider
-const MOCK_PROVIDER_PENDING = [
-  { id: 3, title: "Pipe Fix Offer", client: "Alice", amount: "$80", status: "pending", description: "Fix the leaking pipes in the bathroom." },
-];
-const MOCK_PROVIDER_ONGOING = [
-  { id: 6, title: "Window Repair", client: "Bob", amount: "$100", status: "ongoing", description: "Repair broken window in the living room." },
-];
-const MOCK_PROVIDER_HISTORY = [
-  { id: 4, title: "Kitchen Sink", client: "Bob", amount: "$120", status: "denied", description: "Fix kitchen sink plumbing." },
-];
+import React, { useState } from "react";
+import {
+  MOCK_CLIENT_PENDING,
+  MOCK_CLIENT_ONGOING,
+  MOCK_CLIENT_HISTORY,
+  MOCK_PROVIDER_PENDING,
+  MOCK_PROVIDER_ONGOING,
+  MOCK_PROVIDER_HISTORY,
+} from "../Sample/MockData";
 
 const Offers = ({ role }) => {
   const isClient = role === "client";
@@ -41,30 +27,45 @@ const Offers = ({ role }) => {
   const getCurrentData = () => {
     if (isClient) {
       switch (currentTab) {
-        case "pending": return clientPending;
-        case "ongoing": return clientOngoing;
-        case "history": return clientHistory;
-        default: return [];
+        case "pending":
+          return clientPending;
+        case "ongoing":
+          return clientOngoing;
+        case "history":
+          return clientHistory;
+        default:
+          return [];
       }
     } else {
       switch (currentTab) {
-        case "pending": return providerPending;
-        case "ongoing": return providerOngoing;
-        case "history": return providerHistory;
-        default: return [];
+        case "pending":
+          return providerPending;
+        case "ongoing":
+          return providerOngoing;
+        case "history":
+          return providerHistory;
+        default:
+          return [];
       }
     }
   };
 
   const statusColor = (status) => {
     switch (status) {
-      case "pending": return "status pending";
-      case "accepted": return "status accepted";
-      case "denied": return "status denied";
-      case "cancelled": return "status cancelled";
-      case "finished": return "status finished";
-      case "ongoing": return "status accepted";
-      default: return "";
+      case "pending":
+        return "status pending";
+      case "accepted":
+        return "status accepted";
+      case "denied":
+        return "status denied";
+      case "cancelled":
+        return "status cancelled";
+      case "finished":
+        return "status finished";
+      case "ongoing":
+        return "status accepted";
+      default:
+        return "";
     }
   };
 
@@ -113,9 +114,7 @@ const Offers = ({ role }) => {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-semibold text-lg truncate">{offer.title}</h3>
-                <span className={statusColor(offer.status)}>
-                  {offer.status.toUpperCase()}
-                </span>
+                <span className={statusColor(offer.status)}>{offer.status.toUpperCase()}</span>
               </div>
               <p className="truncate">{isClient ? `From: ${offer.provider}` : `To: ${offer.client}`}</p>
               <p className="text-sm text-gray-600 truncate">{offer.description}</p>
@@ -129,14 +128,7 @@ const Offers = ({ role }) => {
                   <button
                     className="action-btn accept-btn flex-1"
                     onClick={() =>
-                      moveOffer(
-                        offer,
-                        clientPending,
-                        clientOngoing,
-                        setClientPending,
-                        setClientOngoing,
-                        "ongoing"
-                      )
+                      moveOffer(offer, clientPending, clientOngoing, setClientPending, setClientOngoing, "ongoing")
                     }
                   >
                     Accept
@@ -144,14 +136,7 @@ const Offers = ({ role }) => {
                   <button
                     className="action-btn decline-btn flex-1"
                     onClick={() =>
-                      moveOffer(
-                        offer,
-                        clientPending,
-                        clientHistory,
-                        setClientPending,
-                        setClientHistory,
-                        "denied"
-                      )
+                      moveOffer(offer, clientPending, clientHistory, setClientPending, setClientHistory, "denied")
                     }
                   >
                     Decline
@@ -163,14 +148,7 @@ const Offers = ({ role }) => {
                 <button
                   className="action-btn decline-btn w-full"
                   onClick={() =>
-                    moveOffer(
-                      offer,
-                      providerPending,
-                      providerHistory,
-                      setProviderPending,
-                      setProviderHistory,
-                      "cancelled"
-                    )
+                    moveOffer(offer, providerPending, providerHistory, setProviderPending, setProviderHistory, "cancelled")
                   }
                 >
                   Cancel
@@ -178,9 +156,7 @@ const Offers = ({ role }) => {
               )}
 
               {/* View Full Information Button */}
-              <button className="action-btn viewinfo-btn w-full">
-                View Full Information
-              </button>
+              <button className="action-btn viewinfo-btn w-full">View Full Information</button>
             </div>
           </div>
         ))}

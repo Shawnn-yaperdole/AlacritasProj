@@ -1,3 +1,7 @@
+
+/* =====================================================
+   1. GLOBAL CSS // src/App.css
+===================================================== */
 :root {
   --primary-client: #00D09E;
   --primary-provider: #007ccf;
@@ -9,13 +13,14 @@
   --info: #17a2b8;
 }
 
-/* 1. RESET & APP SHELL */
+/* Reset & App Shell */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
 }
+
 html, body, #root {
   height: 100%;
   width: 100%;
@@ -30,17 +35,107 @@ html, body, #root {
   color: var(--text-dark);
 }
 
-/* 2. HEADER */
+/* Base Action Button */
+.action-btn {
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s;
+  padding: 0.7rem 1.2rem;
+  font-weight: 600;
+}
+
+.btn-primary { background-color: var(--primary-client); color: white; }
+.btn-secondary { background-color: #666; color: white; }
+.btn-accent { background-color: #75F2D1; color: black; }
+
+.action-btn:hover { opacity: 0.85; }
+
+/* Status Labels (used in cards & offers) */
+.status {
+  font-weight: bold;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+.status.pending { color: orange; }
+.status.accepted, .status.finished { color: green; }
+.status.denied, .status.cancelled { color: red; }
+
+/* Card Base */
+.card, .offers-card {
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  height: 380px;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card img, .offers-card img {
+  width: 100%;
+  height: 36%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.cards-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 280px);
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 1.5rem;
+  width: 100%;
+  padding-bottom: 2rem;
+}
+
+/* Chat Messages Base */
+.chat-content > div {
+  display: inline-block;
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 20px;
+  word-break: break-word;
+  line-height: 1.4rem;
+  margin: 10px 0 8px 0;
+}
+
+.chat-content > div.self-end {
+  align-self: flex-end;
+  background-color: var(--primary-client);
+  color: white;
+  margin-right: 8px;
+}
+
+.chat-content > div.self-start {
+  align-self: flex-start;
+  background-color: #e0e0e0;
+  color: var(--text-dark);
+  margin-left: 8px;
+}
+
+/* =====================================================
+   2. HEADER CSS
+===================================================== */
 .header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 80px; /* Updated height */
+  height: 80px;
   background-color: var(--white);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   z-index: 100;
-  border-bottom: none;
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
   padding: 0 24px;
@@ -53,7 +148,6 @@ html, body, #root {
   color: var(--text-dark);
 }
 
-/* Navigation buttons */
 .nav-btn {
   background: none;
   border: none;
@@ -74,7 +168,6 @@ html, body, #root {
   border-bottom: 3px solid #333;
 }
 
-/* Switch Mode Button (small, no outline) */
 .switch-btn {
   background: none;
   border: none;
@@ -87,12 +180,8 @@ html, body, #root {
   transition: background 0.2s;
 }
 
-.switch-btn:hover {
-  background: #f0f0f0;
-  border-radius: 6px;
-}
+.switch-btn:hover { background: #f0f0f0; border-radius: 6px; }
 
-/* Menu button */
 .menu-btn {
   font-size: 1.5rem;
   cursor: pointer;
@@ -102,18 +191,11 @@ html, body, #root {
   border-radius: 6px;
 }
 
-.menu-btn:hover {
-  background-color: #f0f0f0;
-}
+.menu-btn:hover { background-color: #f0f0f0; }
 
-/* 3. MAIN CONTENT */
-main {
-  flex-grow: 1;
-  overflow-y: auto;
-  position: relative;
-}
-
-/* 4. LAYOUT CONTAINERS */
+/* =====================================================
+   3. CLIENT HOME CSS
+===================================================== */
 .page-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -139,91 +221,6 @@ main {
   flex-grow: 1;
 }
 
-.action-btn {
-  padding: 0.7rem 1.2rem;
-  border: none;
-  border-radius: 5px;
-  color: white;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.action-btn.post { background-color: var(--primary-client); }
-.action-btn.filter { background-color: #666; }
-
-/* Client buttons */
-.client-post-btn {
-  background-color: var(--primary-client); /* #00D09E */
-  color: white;
-  border: none;
-  padding: 0.7rem 1.2rem;
-  border-radius: 5px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: 0.2s;
-}
-
-.client-post-btn:hover {
-  opacity: 0.85;
-}
-
-.client-filter-btn {
-  background-color: #666;
-  color: white;
-  border: none;
-  padding: 0.7rem 1.2rem;
-  border-radius: 5px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: 0.2s;
-}
-
-.client-filter-btn:hover {
-  opacity: 0.85;
-}
-
-.client-view-btn {
-  background-color: #75F2D1;
-  color: black;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: 0.2s;
-  margin-top: 20px;
-}
-
-.client-view-btn:hover {
-  opacity: 0.85;
-}
-
-/* ClientHome card wrapper */
-.cards-wrapper {
-  width: 100%;
-  max-width: 1200px;    /* max width for the whole grid */
-  margin: 0 auto;       /* center horizontally */
-  padding: 0 16px;      /* space from the edges */
-}
-
-/* Cards */
-.card-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  width: 100%;
-  padding-bottom: 2rem;
-}
-
-.card {
-  background: var(--white);
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  padding-top: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  height: 380px;
-  width: 280px;
-}
-
 .tag {
   display: inline-block;
   padding: 0.25rem 0.5rem;
@@ -233,27 +230,46 @@ main {
   margin-bottom: 0.8rem;
 }
 
-.status {
-  font-weight: bold;
-  margin-top: 1rem;
-  display: block;
+/* Client-specific Buttons */
+.client-post-btn { 
+  background-color: var(--primary-client); 
+  color: white; 
 }
 
-.status.pending { color: orange; } 
-.status.accepted { color: green; } 
-.status.denied { color: red; }
+.client-filter-btn { 
+  background-color: #666; 
+  color: white; 
+}
 
-/* 5. MESSAGES PAGE (Fullscreen style) */
+.client-view-btn { 
+  background-color: #75F2D1; 
+  color: black; 
+  margin-top: auto;
+  width: 80%;
+  padding: 0.5rem 0;
+  border-radius: 5px;
+  cursor: pointer;
+  align-self: center;
+}
+
+/* =====================================================
+   4. PROVIDER CSS
+===================================================== */
+/* Placeholder for Provider-specific CSS */
+
+/* =====================================================
+   5. MESSAGES CSS
+===================================================== */
 .messages-fullscreen {
   display: flex;
   width: 100vw;
-  height: calc(100vh - 80px); 
+  height: calc(100vh - 80px);
   overflow: hidden;
 }
 
 .chat-list {
   flex-shrink: 0;
-  width: 20rem;
+  width: 30rem;
   max-width: 25rem;
   background: var(--white);
   border-right: 1px solid var(--border);
@@ -262,25 +278,38 @@ main {
   overflow-y: auto;
 }
 
-.chat-header {
-  padding: 1rem;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
 .chat-item {
-  padding: 1rem;
-  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
   cursor: pointer;
-  transition: 0.2s;
+  align-items: center;
+  flex-shrink: 0;  /* optional */
 }
 
-.chat-window {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.chat-item .flex-1 {
+  min-width: 0; /* allows truncation */
   overflow: hidden;
-  background-color: #fafafa;
+}
+
+.chat-item p, .chat-item span {
+  white-space: nowrap;       /* keep text on one line */
+  overflow: hidden;          /* hide overflow */
+  text-overflow: ellipsis;   /* add "..." if too long */
+}
+
+.chat-header { 
+  padding: 1rem; 
+  border-bottom: 1px solid var(--border); 
+  flex-shrink: 0; 
+}
+
+.chat-window { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  overflow: hidden; 
+  background-color: #fafafa; 
 }
 
 .chat-window-header {
@@ -293,32 +322,22 @@ main {
   justify-content: space-between;
 }
 
-.chat-content > div {
-  display: inline-block;         /* Shrink to fit text */
-  max-width: 75%;                /* Prevent too wide messages */
-  padding: 12px 16px;            /* Comfortable padding */
-  border-radius: 20px;           /* Rounded corners */
-  word-break: break-word;        /* Wrap long words */
-  line-height: 1.4rem;
-  margin-bottom: 8px;            /* Space between messages */
-  margin-top: 10px;               /* Add a bit of spacing from top */
+.chat-input-area {
+  padding: 1rem;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
 }
 
-.chat-content > div.self-end {
-  align-self: flex-end;
-  background-color: var(--primary-client);
-  color: white;
-  margin-right: 8px;             /* Spacing from right edge */
+.chat-input {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
-.chat-content > div.self-start {
-  align-self: flex-start;
-  background-color: #e0e0e0;
-  color: var(--text-dark);
-  margin-left: 8px;              /* Spacing from left edge */
-}
-
-/* --- Accepted Offer Card --- */
+/* Accepted Offer Card */
 .accepted-offer-card {
   display: flex;
   background-color: var(--white);
@@ -336,152 +355,57 @@ main {
   object-fit: cover;
 }
 
-.accepted-offer-card h3 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
+.accepted-offer-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+.accepted-offer-card p { font-size: 0.875rem; margin: 2px 0; }
+.accepted-offer-card a { font-size: 0.875rem; color: #007bff; text-decoration: none; }
+.accepted-offer-card a:hover { text-decoration: underline; }
 
-.accepted-offer-card p {
-  font-size: 0.875rem;
-  margin: 2px 0;
-}
-
-.accepted-offer-card a {
-  font-size: 0.875rem;
-  color: #007bff;
-  text-decoration: none;
-}
-
-.accepted-offer-card a:hover {
-  text-decoration: underline;
-}
-
-/* Bubble tab buttons for Offers page */
+/* =====================================================
+   6. OFFERS CSS
+===================================================== */
 .offers-tab-container {
   display: flex;
-  justify-content: center;       /* center horizontally */
-  gap: 1.5rem;                   /* space between buttons */
-  margin: 1rem auto 2rem;        /* spacing from top and bottom */
-  max-width: 1200px;             /* match page-container width */
-  padding: 0 24px;               /* same horizontal padding as header */
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1rem auto 2rem;
+  max-width: 1200px;
+  padding: 0 24px;
 }
 
 .offers-tab {
-  padding: 0.5rem 1.4rem;        /* adjust for bigger bubble but still small */
-  border-radius: 25px;            /* rounded bubble */
+  padding: 0.5rem 1.4rem;
+  border-radius: 25px;
   border: 1px solid #ddd;
-  background-color: #f0fdf9;     /* light background */
+  background-color: #f0fdf9;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
   white-space: nowrap;
-  font-size: 0.875rem;           /* slightly smaller font to reduce width */
+  font-size: 0.875rem;
 }
 
 .offers-tab.active {
-  background-color: #00D09E;     /* active highlight */
-  color: white;
-  border-color: #00D09E;
-}
-
-.offers-tab:not(.active):hover {
-  background-color: #e0f7f2;     /* hover effect for inactive */
-}
-
-/* Adjust offer cards for spacing under tabs */
-.offers-card {
-  background: var(--white);
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-top: 30px;
-  width: 280px;     
-  height: 380px;            /* spacing handled by grid gap */
-}
-
-/* Offer card status colors */
-.offers-card .status {
-  font-weight: bold;
-  margin-top: 0.5rem;
-  display: block;
-}
-.offers-card .status.pending { color: orange; } 
-.offers-card .status.accepted { color: green; } 
-.offers-card .status.denied { color: red; }
-.offers-card .status.cancelled { color: red; }
-.offers-card .status.finished { color: green; }
-
-/* Buttons inside cards */
-.action-btn.accept-btn {
-  background-color: #00D09E;
-  color: white;
-}
-.action-btn.decline-btn {
-  background-color: #75F2D1;
-  color: black;
-}
-
-.action-btn.viewinfo-btn {
-  background-color: #75F2D1;
-  color: black;
-}
-
-/* Chat messages adjustments */
-.chat-content > div {
-  display: inline-block;        
-  max-width: 75%;                
-  padding: 12px 16px;            
-  border-radius: 20px;           
-  word-break: break-word;        
-  line-height: 1.4rem;
-  margin-bottom: 8px;            
-  margin-top: 10px;
-}
-
-.chat-content > div.self-end {
-  align-self: flex-end;
   background-color: var(--primary-client);
   color: white;
-  margin-right: 8px;             
+  border-color: var(--primary-client);
 }
 
-.chat-content > div.self-start {
-  align-self: flex-start;
-  background-color: #e0e0e0;
-  color: var(--text-dark);
-  margin-left: 8px;              
+.offers-tab:not(.active):hover { 
+  background-color: #e0f7f2; 
 }
 
-/* Responsive Accepted Offer Card */
-@media (max-width: 768px) {
-  .accepted-offer-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .accepted-offer-card img {
-    width: 100%;
-    height: auto;
-  }
+.offers-card {
+  margin-top: 30px;
 }
 
+/* Buttons inside offers */
+.action-btn.accept-btn { background-color: var(--primary-client); color: white; }
+.action-btn.decline-btn { background-color: #75F2D1; color: black; }
+.action-btn.viewinfo-btn { background-color: #75F2D1; color: black; }
 
-.chat-input-area {
-  padding: 1rem;
-  background: #fff;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-}
-
-.chat-input {
-  flex-grow: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
+/* =====================================================
+   7. PROFILE CSS
+===================================================== */
 .profile-page {
   max-width: 70%;
   margin: 0 auto;
@@ -490,11 +414,11 @@ main {
 
 .profile-pic-container {
   display: flex;
-  flex-direction: column;   /* stack image and button vertically */
+  flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  text-align: center; 
-  gap: 8px;                  /* space between image and button */
+  text-align: center;
+  gap: 8px;
 }
 
 .profile-pic-container img.profile-pic {
@@ -514,7 +438,6 @@ main {
   cursor: pointer;
 }
 
-
 .community-badge {
   background-color: #E5E7EB;
   padding: 4px 10px;
@@ -527,73 +450,74 @@ main {
   color: black;
 }
 
-
-/* 6. SLIDE OUT MENU */
+/* =====================================================
+   8. MENU CSS
+===================================================== */
 .menu-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 200;
-
+  top: 0; 
+  left: 0;
+  width: 100%; 
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  pointer-events: auto;
 }
 
 .side-menu {
   position: fixed;
   top: 0; right: 0;
-  width: 300px; height: 100%;
-  background: var(--white);
-  padding: 2rem;
+  width: 320px;
+  height: 100%;
+  background: white;
+  z-index: 1000;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  box-shadow: -4px 0 10px rgba(0,0,0,0.2);
+  gap: 20px;
+  box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  pointer-events: none; /* Prevent hidden menu from blocking overlay */
+}
+
+.side-menu.open {
   transform: translateX(0);
-  transition: transform 0.3s ease-out;
-}
-
-.close-menu {
-  align-self: flex-end;
-  cursor: pointer;
-  font-size: 1.5rem;
-}
-
-.menu-slide-shadow {
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
+  pointer-events: auto; /* Enable clicks */
 }
 
 
-/* 7. RESPONSIVE */
+.menu-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 20px 0;
+}
+
+.menu-title { font-size: 1.5rem; font-weight: bold; color: #333; }
+.menu-buttons { display: flex; gap: 8px; }
+.notif-btn, .close-btn { background: transparent; border: none; padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.notif-icon, .close-icon { width: 22px; height: 22px; color: #333; }
+.notif-btn:hover .notif-icon, .close-btn:hover .close-icon { color: var(--primary-client); }
+.menu-items-wrapper { display: flex; flex-direction: column; height: 100%; justify-content: space-between; }
+.menu-items { display: flex; flex-direction: column; gap: 16px; }
+.menu-item { padding: 10px 12px; border-radius: 8px; text-align: left; font-size: 15px; cursor: pointer; background: #f8f8f8; transition: background 0.25s ease; }
+.menu-item:hover { background: #eeeeee; }
+.logout { color: red; background: #ffe6e6; margin-bottom: 15px; }
+
+/* =====================================================
+   9. MEDIA QUERIES
+===================================================== */
 @media (max-width: 768px) {
-  .header {
-    flex-wrap: wrap;
-    height: auto;
-    padding: 10px 12px;
-  }
-  .nav-middle {
-    order: 3;
-    width: 100%;
-    overflow-x: auto;
-    justify-content: flex-start;
-    padding-bottom: 5px;
-  }
-
-  .nav-right { 
-    order: 2;
-     margin-left: auto;
-     }
-
-  .page-container { 
-    width: 100%;
-    padding: 1rem; 
-    display: flex;
-    flex-direction: column;
-  }
-
-  .messages-fullscreen { 
-    flex-direction: column; 
-    height: calc(100vh - 140px); 
-  }
-
+  .header { flex-wrap: wrap; height: auto; padding: 10px 12px; }
+  .nav-middle { order: 3; width: 100%; overflow-x: auto; justify-content: flex-start; padding-bottom: 5px; }
+  .nav-right { order: 2; margin-left: auto; }
+  .messages-fullscreen { flex-direction: column; height: calc(100vh - 140px); }
+  .profile-page { max-width: 100%; padding: 120px 1rem 1rem 1rem; }
+  .accepted-offer-card { flex-direction: column; align-items: flex-start; }
+  .accepted-offer-card img { width: 100%; height: auto; }
 }
 
 @media (min-width: 769px) {
