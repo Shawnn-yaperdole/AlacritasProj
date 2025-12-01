@@ -21,7 +21,6 @@ import {
   MOCK_PROVIDER_HISTORY 
 } from './Sample/MockData';
 
-
 function App() {
   const [userMode, setUserMode] = useState('client'); 
   const [currentView, setCurrentView] = useState('home'); 
@@ -30,6 +29,9 @@ function App() {
   // Track selected request & offer
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [selectedOfferId, setSelectedOfferId] = useState(null);
+
+  // NEW: track if request is new or existing
+  const [isNewRequest, setIsNewRequest] = useState(false);
 
   const toggleMode = () => {
     setUserMode(prev => (prev === 'client' ? 'provider' : 'client'));
@@ -42,31 +44,25 @@ function App() {
         return userMode === 'client' ? (
           <ClientHome
             onViewDetails={(id) => {
+              setIsNewRequest(false);  // existing request
               setSelectedRequestId(id);
               setCurrentView('request-details');
             }}
             onCreateRequest={() => {
-              // create a new mock request, append to MOCK_CLIENT_REQUESTS and navigate to its details
-              const maxId = MOCK_CLIENT_REQUESTS.reduce((m, r) => Math.max(m, r.id), 0);
-              const newId = maxId + 1;
-              const newRequest = {
-                id: newId,
-                title: 'New Request',
-                type: 'General',
-                date: new Date().toISOString().split('T')[0],
-                location: '',
-                status: 'draft',
-                description: '',
-                thumbnail: '',
-              };
-              MOCK_CLIENT_REQUESTS.push(newRequest);
+              setIsNewRequest(true);
+
+              // Generate a temporary ID
+              const newId = Math.max(0, ...MOCK_CLIENT_REQUESTS.map(r => r.id)) + 1;
               setSelectedRequestId(newId);
+
+              // Open request details
               setCurrentView('request-details');
             }}
           />
         ) : (
           <ProviderHome
             onViewDetails={(id) => {
+              setIsNewRequest(false);
               setSelectedRequestId(id);
               setCurrentView('request-details');
             }}
@@ -91,38 +87,55 @@ function App() {
         return <Profile role={userMode} />;
 
       case 'request-details': {
-        // Find the request data
-        const requestData =
-          userMode === 'client'
-            ? MOCK_CLIENT_REQUESTS.find(r => r.id === selectedRequestId)
-            : MOCK_CLIENT_REQUESTS.find(r => r.id === selectedRequestId); // provider sees same data
+        // Find existing request if any
+        const existingRequest = MOCK_CLIENT_REQUESTS.find(
+          (r) => r.id === selectedRequestId
+        );
+
+        // If it's new, create a temporary request object
+        const requestData = existingRequest || {
+          id: selectedRequestId,
+          title: '',
+          type: '',
+          date: new Date().toISOString().split('T')[0],
+          location: '',
+          status: 'draft',
+          description: '',
+          thumbnail: '',
+          images: [],
+        };
 
         return (
           <RequestDetails
+            isNewRequest={isNewRequest} // <-- important
             requestData={requestData}
             userRole={userMode}
             onBackToClientHome={(updatedRequest) => {
               if (userMode === 'client') {
                 if (updatedRequest) {
-                const index = MOCK_CLIENT_REQUESTS.findIndex(r => r.id === updatedRequest.id);
-                if (index !== -1) {
-                  MOCK_CLIENT_REQUESTS[index] = updatedRequest;
+                  const index = MOCK_CLIENT_REQUESTS.findIndex(
+                    (r) => r.id === updatedRequest.id
+                  );
+
+                  if (index !== -1) {
+                    // Update existing request
+                    MOCK_CLIENT_REQUESTS[index] = updatedRequest;
+                  } else if (isNewRequest) {
+                    // Only add new request when saved
+                    MOCK_CLIENT_REQUESTS.push(updatedRequest);
+                  }
                 }
-              } else {
-                const index = MOCK_CLIENT_REQUESTS.findIndex(r => r.id === selectedRequestId);
-                if (index !== -1) {
-                  MOCK_CLIENT_REQUESTS.splice(index, 1);
-                }
+                // If updatedRequest is null (Cancel), do nothing
               }
-            }
-            setCurrentView('home');
-          }}
-        />
-      );
-    }
+
+              // Go back to client home
+              setCurrentView('home');
+            }}
+          />
+        );
+      }
 
       case 'offer-details': {
-        // Find selected offer and its related request
         const offerData = [
           ...MOCK_CLIENT_PENDING,
           ...MOCK_CLIENT_ONGOING,
@@ -150,27 +163,15 @@ function App() {
         return userMode === 'client' ? (
           <ClientHome
             onViewDetails={(id) => {
+              setIsNewRequest(false);
               setSelectedRequestId(id);
               setCurrentView('request-details');
-            }}
-            onGoToOfferDetails={() => {
-              const allOffers = [
-                ...MOCK_CLIENT_PENDING,
-                ...MOCK_CLIENT_ONGOING,
-                ...MOCK_CLIENT_HISTORY,
-                ...MOCK_PROVIDER_PENDING,
-                ...MOCK_PROVIDER_ONGOING,
-                ...MOCK_PROVIDER_HISTORY,
-              ];
-              const firstOffer = allOffers[0];
-              if (firstOffer) setSelectedOfferId(firstOffer.id);
-              else setSelectedOfferId(null);
-              setCurrentView('offer-details');
             }}
           />
         ) : (
           <ProviderHome
             onViewDetails={(id) => {
+              setIsNewRequest(false);
               setSelectedRequestId(id);
               setCurrentView('request-details');
             }}

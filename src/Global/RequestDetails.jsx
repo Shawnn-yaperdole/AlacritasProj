@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { uploadFileToCloudinary } from "../lib/cloudinary";
 import { saveRequest, saveRequestRealtime } from "../lib/firebase";
 import { deleteRequest, deleteRequestRealtime } from "../lib/firebase";
+import { MOCK_CLIENT_REQUESTS } from "../Sample/MockData";
 
 const RequestDetails = ({ requestData, userRole, onBackToClientHome }) => {
   const [title, setTitle] = useState(requestData.title || "");
@@ -66,6 +67,18 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome }) => {
     if (!title || !type || !location || !description || additionalImages.length === 0) {
       alert("Please fill all fields and upload at least one image before saving.");
       return;
+    }
+    if (isNewRequest) {
+      const maxId = MOCK_CLIENT_REQUESTS.reduce((m, r) => Math.max(m, r.id), 0);
+      const newId = maxId + 1;
+      payload.id = newId;
+
+      MOCK_CLIENT_REQUESTS.push(payload);
+    } else {
+      const index = MOCK_CLIENT_REQUESTS.findIndex(r => r.id === payload.id);
+      if (index !== -1) {
+        MOCK_CLIENT_REQUESTS[index] = payload;
+      }
     }
 
     setIsSaving(true);
@@ -270,17 +283,26 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome }) => {
             onClick={handleSaveChanges}
             disabled={isSaveDisabled}
           >
-            Save Changes
+            Save 
           </button>
 
           <button
             className="action-btn btn-secondary px-6 py-2"
+              onClick={() => onBackToClientHome(null)}    
+          >
+            Cancel  
+          </button>
+
+          {requestData?.id && (      
+          <button
+            className="action-btn btn-secondary px-6 py-2"
             onClick={handleDeleteRequest}
           >
-            Delete Request
+            Delete 
           </button>
-        </div>
-      )}
+        )}
+      </div>
+    )}
 
       {/* ------------------ Modals ------------------ */}
       {chooseThumbnailOpen && (
