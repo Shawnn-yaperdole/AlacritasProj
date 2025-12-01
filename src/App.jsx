@@ -33,6 +33,8 @@ function App() {
   // NEW: track if request is new or existing
   const [isNewRequest, setIsNewRequest] = useState(false);
 
+   const [tempRequestData, setTempRequestData] = useState(null);
+
   const toggleMode = () => {
     setUserMode(prev => (prev === 'client' ? 'provider' : 'client'));
     setCurrentView('home');
@@ -53,10 +55,25 @@ function App() {
 
               // Generate a temporary ID
               const newId = Math.max(0, ...MOCK_CLIENT_REQUESTS.map(r => r.id)) + 1;
+
+              const newRequest = {
+                id: newId,
+                title: '',
+                type: '',
+                date: new Date().toISOString().split('T')[0],
+                location: '',
+                status: 'draft',
+                description: '',
+                thumbnail: '',
+                images: [], 
+              };
+
               setSelectedRequestId(newId);
 
               // Open request details
               setCurrentView('request-details');
+
+              setTempRequestData(newRequest);
             }}
           />
         ) : (
@@ -93,22 +110,17 @@ function App() {
         );
 
         // If it's new, create a temporary request object
-        const requestData = existingRequest || {
-          id: selectedRequestId,
-          title: '',
-          type: '',
-          date: new Date().toISOString().split('T')[0],
-          location: '',
-          status: 'draft',
-          description: '',
-          thumbnail: '',
-          images: [],
-        };
+        const requestData = isNewRequest
+        ? tempRequestData
+        : existingRequest; 
+        
 
         return (
           <RequestDetails
             isNewRequest={isNewRequest} // <-- important
             requestData={requestData}
+            tempRequestData={tempRequestData}
+            setTempRequestData={setTempRequestData}
             userRole={userMode}
             onBackToClientHome={(updatedRequest) => {
               if (userMode === 'client') {
