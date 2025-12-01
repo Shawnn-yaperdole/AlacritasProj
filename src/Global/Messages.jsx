@@ -1,12 +1,103 @@
 // src/Global/Messages.jsx
-import React, { useState } from "react";
-import { MOCK_CHATS, CHAT_MESSAGES, ACCEPTED_OFFER } from "../Sample/MockData";
+import React, { useState, useEffect, useRef } from "react";
+import { MOCK_CHATS, CHAT_MESSAGES, ACCEPTED_OFFER, MOCK_CLIENT, MOCK_PROVIDER } from "../Sample/MockData";
+import { sendMessage, subscribeToChatMessages, subscribeToChats, createChat } from "../lib/firebase";
+import ChatBubble from "./ChatBubble";
 
-const MessagesPage = ({ chats = MOCK_CHATS }) => {
+const MessagesPage = ({ userRole = 'client' }) => {
+  const [chats, setChats] = useState(MOCK_CHATS);
   const [selectedChatId, setSelectedChatId] = useState(chats[0]?.id || null);
   const [search, setSearch] = useState("");
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newAvatar, setNewAvatar] = useState("");
+  const [newMessage, setNewMessage] = useState("");
+  const [newError, setNewError] = useState("");
 
   const selectedChat = chats.find((c) => c.id === selectedChatId);
+  const currentUserPic = userRole === 'client' ? MOCK_CLIENT.profilePic : MOCK_PROVIDER.profilePic;
+  const [localUserId, setLocalUserId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState("");
+  const messagesRef = useRef(null);
+
+  // subscribe to available chats (meta) so both clients share the same list
+  useEffect(() => {
+    const unsub = subscribeToChats((list) => {
+      if (!list || !list.length) return;
+      setChats(list);
+      if (!selectedChatId) setSelectedChatId(list[0].id);
+    });
+
+    return () => { try { unsub && unsub(); } catch (e) {} };
+  }, []);
+
+  // establish a local user id to identify sent messages reliably across devices
+  useEffect(() => {
+    try {
+      const key = 'alacritas_user_id';
+      let id = null;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        id = window.localStorage.getItem(key);
+        if (!id) {
+          id = 'user-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+          window.localStorage.setItem(key, id);
+        }
+      } else {
+        id = 'user-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+      }
+      setLocalUserId(id);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to establish local user id', e);
+      setLocalUserId('user-' + Date.now());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedChatId) {
+      setMessages([]);
+      return undefined;
+    }
+
+    const unsubscribe = subscribeToChatMessages(selectedChatId, (msgs) => {
+      // debug: log incoming messages for troubleshooting
+      // eslint-disable-next-line no-console
+      console.debug('subscribeToChatMessages:', selectedChatId, msgs);
+      setMessages(msgs || []);
+      // scroll to bottom on new messages (next tick)
+      setTimeout(() => {
+        try {
+          if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+        } catch (e) {
+          // ignore
+        }
+      }, 50);
+    });
+
+    return () => {
+      try { unsubscribe && unsubscribe(); } catch (e) { /* ignore */ }
+    };
+  }, [selectedChatId]);
+
+  const handleSend = async () => {
+    if (!inputValue || !selectedChatId) return;
+    const text = inputValue.trim();
+    if (!text) return;
+    const msg = { text, sender: 'Self', senderRole: userRole, senderId: localUserId, timestamp: Date.now() };
+    try {
+      await sendMessage(selectedChatId, msg);
+      // eslint-disable-next-line no-console
+      console.debug('sent message', selectedChatId, msg);
+      setInputValue('');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to send message', err);
+      // fallback to local append
+      setMessages((prev) => [...prev, { id: 'local-' + Date.now(), ...msg }]);
+      setInputValue('');
+    }
+  };
 
   return (
     <div className="messages-fullscreen flex w-screen h-screen">
@@ -20,6 +111,38 @@ const MessagesPage = ({ chats = MOCK_CHATS }) => {
             onChange={(e) => setSearch(e.target.value)}
             className="search-input w-full rounded border px-3 py-2"
           />
+          <div className="mt-2 flex gap-2 items-center">
+            <button className="action-btn px-3 py-1" onClick={() => setShowNewForm(s => !s)}>{showNewForm ? 'Cancel' : 'New Chat'}</button>
+          {showNewForm && (
+            <div className="w-full mt-2 p-2 border rounded bg-white">
+              <input className="w-full mb-1 p-1 border rounded" placeholder="Chat name" value={newName} onChange={(e) => { setNewName(e.target.value); setNewError(''); }} />
+              <input className="w-full mb-1 p-1 border rounded" placeholder="Avatar URL (optional)" value={newAvatar} onChange={(e) => setNewAvatar(e.target.value)} />
+              <input className="w-full mb-1 p-1 border rounded" placeholder="Initial message (optional)" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
+              {newError && <div className="text-sm text-red-600 mb-2">{newError}</div>}
+              <div className="flex justify-end">
+                <button
+                  className="action-btn px-3 py-1"
+                  onClick={async () => {
+                    if (!newName) { setNewError('Please provide a chat name'); return; }
+                    try {
+                      const chatId = await createChat({ name: newName, avatar: newAvatar });
+                      // send initial message if provided
+                      if (newMessage && chatId) {
+                        await sendMessage(chatId, { text: newMessage, sender: 'Self', senderRole: userRole, senderId: localUserId, timestamp: Date.now() });
+                      }
+                      setNewName(''); setNewAvatar(''); setNewMessage(''); setShowNewForm(false);
+                      setSelectedChatId(chatId);
+                    } catch (e) {
+                      // eslint-disable-next-line no-console
+                      console.error('Failed to create chat', e);
+                      setNewError('Failed to create chat. See console for details.');
+                    }
+                  }}
+                >Create</button>
+              </div>
+            </div>
+          )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0">
@@ -101,19 +224,20 @@ const MessagesPage = ({ chats = MOCK_CHATS }) => {
             </div>
 
             {/* Chat Messages */}
-            <div className="chat-content flex-1 flex flex-col p-4 overflow-y-auto gap-2 min-h-0">
-              {CHAT_MESSAGES.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`max-w-[75%] p-3 rounded-xl break-words ${
-                    msg.sender === "Self"
-                      ? "self-end bg-primary-client text-white"
-                      : "self-start bg-gray-200 text-gray-800"
-                  }`}
-                >
-                  {msg.text}
-                </div>
-              ))}
+            <div className="chat-content flex-1 flex flex-col p-4 overflow-y-auto gap-2 min-h-0" ref={messagesRef}>
+              {(messages.length ? messages : CHAT_MESSAGES).map((msg) => {
+                const isSent = (msg.senderId && localUserId && msg.senderId === localUserId) || (msg.senderRole && msg.senderRole === userRole) || msg.sender === 'Self' || msg.sender === 'Me';
+                return (
+                  <ChatBubble
+                    key={msg.id || msg.timestamp}
+                    msg={msg}
+                    isSent={isSent}
+                    currentUserPic={currentUserPic}
+                    chatAvatar={selectedChat?.avatar}
+                    userRole={userRole}
+                  />
+                );
+              })}
             </div>
 
             {/* Input */}
@@ -122,8 +246,16 @@ const MessagesPage = ({ chats = MOCK_CHATS }) => {
                 type="text"
                 placeholder="Type a message..."
                 className="chat-input flex-1 px-3 py-2 rounded border"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
               />
-              <button className="action-btn post px-4 py-2">Send</button>
+              <button className="action-btn post px-4 py-2" onClick={handleSend}>Send</button>
             </div>
           </>
         ) : (

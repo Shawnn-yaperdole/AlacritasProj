@@ -1,0 +1,20 @@
+{
+  "rules": {
+    ".read": "now < 1767110400000",
+    ".write": "now < 1767110400000",
+
+    "chats": {
+      "$chatId": {
+        "messages": {
+          "$msgId": {
+            ".validate": "newData.child('text').isString() && !newData.child('text').val().matches(/.*\\d{7,}.*/) && newData.child('timestamp').isNumber()"
+          }
+        },
+        "meta": {
+          ".read": true,
+          ".write": true
+        }
+      }
+    }
+  }
+}

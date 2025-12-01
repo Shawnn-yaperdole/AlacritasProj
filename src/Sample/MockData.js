@@ -3,7 +3,7 @@
 // ==============================
 // CLIENT MOCK DATA
 // ==============================
-export const MOCK_CLIENT = {
+const _DEFAULT_CLIENT = {
   profilePic: "https://via.placeholder.com/200",
   fullName: "John Doe",
   email: "john@example.com",
@@ -13,6 +13,23 @@ export const MOCK_CLIENT = {
   defaultCommunity: "Gardening Club",
   bio: "Hello! I love connecting with providers to get things done.",
 };
+
+// If a saved profile exists in localStorage, merge it so updates persist across pages/reloads
+function loadSavedProfile(key, defaults) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return { ...defaults };
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return { ...defaults };
+    const parsed = JSON.parse(raw);
+    return { ...defaults, ...parsed };
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('Failed to load saved profile from localStorage', e);
+    return { ...defaults };
+  }
+}
+
+export const MOCK_CLIENT = loadSavedProfile('alacritas_profile_client', _DEFAULT_CLIENT);
 
 export const MOCK_CLIENT_REQUESTS = [
   {
@@ -60,7 +77,7 @@ export const MOCK_CLIENT_REQUESTS = [
 // ==============================
 // PROVIDER MOCK DATA
 // ==============================
-export const MOCK_PROVIDER = {
+const _DEFAULT_PROVIDER = {
   profilePic: "https://via.placeholder.com/200",
   fullName: "Jane Smith",
   email: "jane@example.com",
@@ -76,6 +93,8 @@ export const MOCK_PROVIDER = {
     { name: "Gardening", verified: true },
   ],
 };
+
+export const MOCK_PROVIDER = loadSavedProfile('alacritas_profile_provider', _DEFAULT_PROVIDER);
 
 
 

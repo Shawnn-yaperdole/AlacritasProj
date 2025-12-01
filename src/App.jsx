@@ -46,6 +46,24 @@ function App() {
               setSelectedRequestId(id);
               setCurrentView('request-details');
             }}
+            onCreateRequest={() => {
+              // create a new mock request, append to MOCK_CLIENT_REQUESTS and navigate to its details
+              const maxId = MOCK_CLIENT_REQUESTS.reduce((m, r) => Math.max(m, r.id), 0);
+              const newId = maxId + 1;
+              const newRequest = {
+                id: newId,
+                title: 'New Request',
+                type: 'General',
+                date: new Date().toISOString().split('T')[0],
+                location: '',
+                status: 'draft',
+                description: '',
+                thumbnail: '',
+              };
+              MOCK_CLIENT_REQUESTS.push(newRequest);
+              setSelectedRequestId(newId);
+              setCurrentView('request-details');
+            }}
           />
         ) : (
           <ProviderHome
@@ -57,7 +75,7 @@ function App() {
         );
 
       case 'messages':
-        return <MessagesPage />;
+        return <MessagesPage userRole={userMode} />;
 
       case 'offers':
         return (
@@ -123,7 +141,35 @@ function App() {
       }
 
       default:
-        return userMode === 'client' ? <ClientHome /> : <ProviderHome />;
+        return userMode === 'client' ? (
+          <ClientHome
+            onViewDetails={(id) => {
+              setSelectedRequestId(id);
+              setCurrentView('request-details');
+            }}
+            onGoToOfferDetails={() => {
+              const allOffers = [
+                ...MOCK_CLIENT_PENDING,
+                ...MOCK_CLIENT_ONGOING,
+                ...MOCK_CLIENT_HISTORY,
+                ...MOCK_PROVIDER_PENDING,
+                ...MOCK_PROVIDER_ONGOING,
+                ...MOCK_PROVIDER_HISTORY,
+              ];
+              const firstOffer = allOffers[0];
+              if (firstOffer) setSelectedOfferId(firstOffer.id);
+              else setSelectedOfferId(null);
+              setCurrentView('offer-details');
+            }}
+          />
+        ) : (
+          <ProviderHome
+            onViewDetails={(id) => {
+              setSelectedRequestId(id);
+              setCurrentView('request-details');
+            }}
+          />
+        );
     }
   };
 

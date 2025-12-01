@@ -1,6 +1,9 @@
 // src/Global/Profile.jsx
 import React, { useState } from "react";
 import { MOCK_CLIENT, MOCK_PROVIDER } from "../Sample/MockData";
+import { saveProfileRealtime, saveProfile } from "../lib/firebase";
+import { uploadFileToCloudinary } from "../lib/cloudinary";
+import { useRef } from "react";
 
 const Profile = ({ role }) => {
   const isClient = role === "client";
@@ -16,8 +19,12 @@ const Profile = ({ role }) => {
   const [bio, setBio] = useState(initialData.bio);
   const [skills, setSkills] = useState(initialData.skills || []);
   const [isEditingBio, setIsEditingBio] = useState(false);
+  const [isUploadingPic, setIsUploadingPic] = useState(false);
+  const fileInputRef = useRef(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const updatedData = {
       profilePic,
       fullName,
@@ -29,9 +36,64 @@ const Profile = ({ role }) => {
       bio,
       skills,
     };
-    console.log("Saved Profile Data:", updatedData);
-    alert("Profile saved!");
+
+    // Try saving to Realtime DB first, fall back to Firestore
+    try {
+      await saveProfileRealtime(isClient ? 'client' : 'provider', updatedData);
+      // eslint-disable-next-line no-console
+      console.log('Profile saved to Realtime DB:', updatedData);
+      // removed blocking alert on successful save
+    } catch (rtdbErr) {
+      // attempt Firestore
+      try {
+        await saveProfile(isClient ? 'client' : 'provider', updatedData);
+        // eslint-disable-next-line no-console
+        console.log('Profile saved to Firestore:', updatedData);
+        // removed blocking alert on successful save (Firestore fallback)
+      } catch (fsErr) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to save profile to database', rtdbErr, fsErr);
+        setProfileError('Failed to save profile. See console for details.');
+      }
+    }
+
     setIsEditingBio(false); // stop editing after saving
+    setIsEditingProfile(false);
+
+    // update in-memory mocks so other views reflect the change immediately
+    try {
+      if (isClient) {
+        // mutate exported mock object
+        MOCK_CLIENT.profilePic = profilePic;
+        MOCK_CLIENT.fullName = fullName;
+        MOCK_CLIENT.email = email;
+        MOCK_CLIENT.phone = phone;
+        MOCK_CLIENT.location = location;
+        MOCK_CLIENT.bio = bio;
+      } else {
+        MOCK_PROVIDER.profilePic = profilePic;
+        MOCK_PROVIDER.fullName = fullName;
+        MOCK_PROVIDER.email = email;
+        MOCK_PROVIDER.phone = phone;
+        MOCK_PROVIDER.location = location;
+        MOCK_PROVIDER.bio = bio;
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to update in-memory mock profiles', e);
+    }
+
+    // persist to localStorage so reloads keep the profile
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const key = isClient ? 'alacritas_profile_client' : 'alacritas_profile_provider';
+        const payload = { profilePic, fullName, email, phone, location, bio };
+        window.localStorage.setItem(key, JSON.stringify(payload));
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to persist profile to localStorage', e);
+    }
   };
 
   return (
@@ -40,27 +102,91 @@ const Profile = ({ role }) => {
       <div className="profile-left flex flex-col items-center gap-6 md:w-1/3">
         <div className="profile-pic-container relative">
           <img src={profilePic} alt="profile" className="profile-pic" />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files && e.target.files[0];
+              if (!file) return;
+              try {
+                setIsUploadingPic(true);
+                const url = await uploadFileToCloudinary(file);
+                setProfilePic(url);
+                // auto-save profile pic change to DB (optional) - keep existing save flow for full profile
+                // You can uncomment to auto-save: await saveProfileRealtime(isClient ? 'client' : 'provider', { profilePic: url });
+              } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error('Profile picture upload failed', err);
+                setProfileError('Failed to upload profile picture.');
+              } finally {
+                setIsUploadingPic(false);
+                // reset input so same file can be selected again
+                e.target.value = null;
+              }
+            }}
+            className="hidden"
+          />
           <button
             className="edit-pic-btn"
-            onClick={() => {
-              const newUrl = prompt("Enter new profile picture URL", profilePic);
-              if (newUrl) setProfilePic(newUrl);
-            }}
+            onClick={() => fileInputRef.current && fileInputRef.current.click()}
+            disabled={isUploadingPic}
           >
-            Edit
+            {isUploadingPic ? 'Uploading...' : 'Edit'}
           </button>
         </div>
 
         <div className="contact-info flex flex-col gap-2 text-center md:text-left">
-          <div><strong>Email:</strong> {email}</div>
-          <div><strong>Phone:</strong> {phone}</div>
-          <div><strong>Location:</strong> {location}</div>
+          <div>
+            <strong>Email:</strong>{' '}
+            {isEditingProfile ? (
+              <input value={email} onChange={(e) => setEmail(e.target.value)} className="rd-search-input p-1" />
+            ) : (
+              email
+            )}
+          </div>
+          <div>
+            <strong>Phone:</strong>{' '}
+            {isEditingProfile ? (
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} className="rd-search-input p-1" />
+            ) : (
+              phone
+            )}
+          </div>
+          <div>
+            <strong>Location:</strong>{' '}
+            {isEditingProfile ? (
+              <input value={location} onChange={(e) => setLocation(e.target.value)} className="rd-search-input p-1" />
+            ) : (
+              location
+            )}
+          </div>
         </div>
       </div>
 
       {/* Right: Main Info */}
       <div className="profile-right flex flex-col gap-6 md:w-2/3 text-center md:text-left">
-        <h1 className="text-5xl font-bold">{fullName}</h1>
+        <div className="flex items-center justify-between">
+          {isEditingProfile ? (
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="text-4xl font-bold rd-search-input p-2"
+            />
+          ) : (
+            <h1 className="text-5xl font-bold">{fullName}</h1>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              className="action-btn btn-secondary px-3 py-1"
+              onClick={() => setIsEditingProfile((s) => !s)}
+            >
+              {isEditingProfile ? 'Done' : 'Edit Profile'}
+            </button>
+          </div>
+        </div>
 
         {/* Communities */}
         <div className="communities flex flex-col gap-2">
@@ -132,6 +258,7 @@ const Profile = ({ role }) => {
           >
             Save Profile
           </button>
+          {profileError && <div className="text-red-600 mt-2">{profileError}</div>}
         </div>
       </div>
     </div>

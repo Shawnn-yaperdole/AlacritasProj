@@ -42,7 +42,7 @@ const RequestCard = ({ request, onViewDetails }) => (
   </div>
 );
 
-const ClientHome = ({ onViewDetails }) => {
+const ClientHome = ({ onViewDetails, onCreateRequest }) => {
   const [filterText, setFilterText] = useState("");
 
   const filteredRequests = MOCK_CLIENT_REQUESTS.filter((req) =>
@@ -60,7 +60,12 @@ const ClientHome = ({ onViewDetails }) => {
       <div className="controls flex flex-wrap gap-4 items-center">
         <SearchBar value={filterText} onChange={(e) => setFilterText(e.target.value)} />
         <button className="action-btn client-filter-btn flex-shrink-0">Filter Requests By:</button>
-        <button className="action-btn client-post-btn flex-shrink-0">+ Post Request</button>
+        <button
+          className="action-btn client-post-btn flex-shrink-0"
+          onClick={() => onCreateRequest && onCreateRequest()}
+        >
+          + Post Request
+        </button>
       </div>
 
       {/* Card List */}

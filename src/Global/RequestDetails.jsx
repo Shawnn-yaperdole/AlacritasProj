@@ -1,13 +1,17 @@
 // src/Global/RequestDetails.jsx
 import React, { useState } from "react";
+import { uploadFileToCloudinary } from "../lib/cloudinary";
+import { saveRequest, saveRequestRealtime } from "../lib/firebase";
 
 const RequestDetails = ({ requestData, userRole, onBackToClientHome }) => {
   const [title, setTitle] = useState(requestData.title || "");
   const [type, setType] = useState(requestData.type || "");
   const [location, setLocation] = useState(requestData.location || "");
   const [description, setDescription] = useState(requestData.description || "");
+  // thumbnail: string URL of image. additionalImages: array of { src: string, file?: File }
   const [thumbnail, setThumbnail] = useState(requestData.thumbnail || "");
-  const [additionalImages, setAdditionalImages] = useState(requestData.images || []);
+  const initialAdditional = (requestData.images || []).map((src) => ({ src }));
+  const [additionalImages, setAdditionalImages] = useState(initialAdditional);
 
   // Modals state
   const [chooseThumbnailOpen, setChooseThumbnailOpen] = useState(false);
@@ -15,29 +19,97 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome }) => {
   const [providerViewOpen, setProviderViewOpen] = useState(false);
   const [zoomedImage, setZoomedImage] = useState(null);
 
-  // Handlers for file uploads
+  // Handlers for file uploads - store File and preview URL together
   const handleUpload = (e) => {
-    const files = Array.from(e.target.files).map((file) => URL.createObjectURL(file));
-    setAdditionalImages([...additionalImages, ...files]);
+    const files = Array.from(e.target.files).map((file) => ({ src: URL.createObjectURL(file), file }));
+    setAdditionalImages((prev) => [...prev, ...files]);
   };
 
-  const handleSelectThumbnail = (img) => {
-    setThumbnail(img);
+  const handleSelectThumbnail = (imgSrc) => {
+    setThumbnail(imgSrc);
     setChooseThumbnailOpen(false);
   };
 
   // ------------------ Save Changes ------------------
-  const handleSaveChanges = () => {
-    if (onBackToClientHome) {
-      onBackToClientHome({
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    setSaveMessage("");
+    // 1) Upload any new files to Cloudinary
+    try {
+      const uploaded = await Promise.all(
+        additionalImages.map(async (item) => {
+          if (item.file) {
+            const url = await uploadFileToCloudinary(item.file);
+            return { src: url };
+          }
+          return { src: item.src };
+        })
+      );
+
+      // 2) Ensure thumbnail is a remote URL: if thumbnail was a local preview, map to uploaded URL
+      let thumbnailUrl = thumbnail;
+      const imagesUrls = uploaded.map((u) => u.src);
+      if (thumbnailUrl && !thumbnailUrl.startsWith('http')) {
+        const idx = additionalImages.findIndex((a) => a.src === thumbnailUrl);
+        if (idx !== -1 && imagesUrls[idx]) thumbnailUrl = imagesUrls[idx];
+      }
+
+      // Update local state so uploaded images are shown immediately in the UI
+      setAdditionalImages(imagesUrls.map((src) => ({ src })));
+      if (thumbnailUrl) setThumbnail(thumbnailUrl);
+
+      // 3) Prepare data to save
+      const payload = {
         ...requestData,
         title,
         type,
         location,
         description,
-        thumbnail,
-        images: additionalImages,
-      });
+        thumbnail: thumbnailUrl || (imagesUrls[0] || ''),
+        images: imagesUrls,
+      };
+
+      // 4) Save to Realtime Database (preferred). Fall back to Firestore if RTDB unavailable.
+      try {
+        if (requestData?.id) {
+          try {
+            await saveRequestRealtime(requestData.id, payload);
+          } catch (rtdbErr) {
+            // eslint-disable-next-line no-console
+            console.warn('Realtime DB save failed, falling back to Firestore', rtdbErr);
+            try {
+              await saveRequest(requestData.id, payload);
+            } catch (fsErr) {
+              // eslint-disable-next-line no-console
+              console.warn('Firestore save failed', fsErr);
+              throw fsErr; // rethrow to be caught by outer catch
+            }
+          }
+        }
+      } catch (e) {
+        // both saves failed or unexpected error
+        // eslint-disable-next-line no-console
+        console.error('Failed to save to database', e);
+        throw e;
+      }
+
+      if (onBackToClientHome) {
+        onBackToClientHome(payload);
+      }
+      setSaveMessage("Saved successfully.");
+      setTimeout(() => setSaveMessage(""), 2500);
+      setIsSaving(false);
+    } catch (err) {
+      // handle upload/save errors
+      // eslint-disable-next-line no-alert
+      const msg = 'Failed to save request: ' + (err.message || err);
+      // eslint-disable-next-line no-console
+      console.error(msg, err);
+      setSaveMessage(msg);
+      setIsSaving(false);
     }
   };
 
@@ -198,10 +270,10 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome }) => {
             {additionalImages.map((img, idx) => (
               <img
                 key={idx}
-                src={img}
+                src={img.src}
                 alt={`Thumbnail ${idx}`}
                 className="cursor-pointer rounded border-2 border-gray-300 hover:border-blue-500"
-                onClick={() => handleSelectThumbnail(img)}
+                onClick={() => handleSelectThumbnail(img.src)}
               />
             ))}
           </div>
@@ -216,7 +288,7 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome }) => {
             {additionalImages.map((img, idx) => (
               <img
                 key={idx}
-                src={img}
+                src={img.src}
                 alt={`Reference ${idx}`}
                 className="rounded border-2 border-gray-300"
               />
@@ -233,10 +305,10 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome }) => {
             {additionalImages.map((img, idx) => (
               <img
                 key={idx}
-                src={img}
+                src={img.src}
                 alt={`Reference ${idx}`}
                 className="cursor-pointer rounded border-2 border-gray-300 hover:scale-110 transition-transform"
-                onClick={() => setZoomedImage(img)}
+                onClick={() => setZoomedImage(img.src)}
               />
             ))}
           </div>
