@@ -1,24 +1,13 @@
-// src/Provider/ProviderHome.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { MOCK_CLIENT_REQUESTS, MOCK_PROVIDER } from "../Sample/MockData";
 
-// Reusable SearchBar component
-const SearchBar = ({ value, onChange }) => (
-  <input
-    className="search-input px-3 py-2 border rounded-md flex-grow min-w-0"
-    placeholder="Search client requests or communities..."
-    value={value}
-    onChange={onChange}
-  />
-);
-
-// RequestCard component
+// RequestCard
 const RequestCard = ({ request, onViewDetails, onSendOffer }) => (
-  <div className="card hover:shadow-lg transition-shadow duration-200 flex flex-col">
+  <div className="card hover:shadow-lg transition-shadow duration-200 flex flex-col min-w-[220px]">
     <img
       src={request.thumbnail}
       alt={request.title}
-      className="w-full max-h-35 object-cover rounded-lg mb-3"
+      className="w-full max-h-36 object-cover rounded-lg mb-3"
     />
     <div className="flex-1 flex flex-col space-y-1">
       <h3 className="font-semibold text-lg truncate" title={request.title}>
@@ -47,7 +36,7 @@ const RequestCard = ({ request, onViewDetails, onSendOffer }) => (
   </div>
 );
 
-// ArrowButton component
+// ArrowButton
 const ArrowButton = ({ direction, onClick, isActive }) => (
   <button
     className={`arrow-btn ${isActive ? "active" : ""}`}
@@ -66,17 +55,39 @@ const ArrowButton = ({ direction, onClick, isActive }) => (
   </button>
 );
 
-const ProviderHome = ({ onViewDetails, onSendOffer }) => {
-  const [filterText, setFilterText] = useState("");
-  const providerData = MOCK_PROVIDER;
+// SearchBar
+const SearchBar = ({ value, onChange }) => (
+  <input
+    className="search-input px-3 py-2 border border-gray-300 rounded-md flex-grow min-w-0"
+    placeholder="Search client requests or communities..."
+    value={value}
+    onChange={onChange}
+  />
+);
 
-  // Refs for each community row
+const ProviderHome = ({ onViewDetails, onSendOffer, navigateToProfile }) => {
+  const [filterText, setFilterText] = useState("");
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("");
+  const [customType, setCustomType] = useState("");
+  const [communityFilter, setCommunityFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+
+  const providerData = MOCK_PROVIDER;
+  const dropdownRef = useRef(null);
+
+  const TYPES = [
+    "Construction","Electrical","Plumbing","Mechanical","Transport",
+    "Logistics","Manufacturing","Welding","Painting","Landscaping","Other"
+  ];
+
+  // Horizontal scroll refs
   const communityRefs = providerData.communities.reduce((acc, community) => {
     acc[community] = useRef(null);
     return acc;
   }, {});
 
-  // Track scroll status
   const [scrollStatus, setScrollStatus] = useState(
     providerData.communities.reduce((acc, community) => {
       acc[community] = { left: false, right: false };
@@ -87,112 +98,203 @@ const ProviderHome = ({ onViewDetails, onSendOffer }) => {
   const updateScrollStatus = (community) => {
     const container = communityRefs[community].current;
     if (!container) return;
-
-    setScrollStatus((prev) => ({
+    setScrollStatus(prev => ({
       ...prev,
       [community]: {
         left: container.scrollLeft > 0,
-        right: container.scrollLeft < container.scrollWidth - container.clientWidth,
-      },
+        right: container.scrollLeft < container.scrollWidth - container.clientWidth
+      }
     }));
   };
 
   const scroll = (community, direction) => {
     const container = communityRefs[community].current;
     if (!container) return;
-
     const scrollAmount = 300;
-
-    container.scrollBy({
-      left: direction === "right" ? scrollAmount : -scrollAmount,
-      behavior: "smooth",
-    });
-
+    container.scrollBy({ left: direction === "right" ? scrollAmount : -scrollAmount, behavior: "smooth" });
     setTimeout(() => updateScrollStatus(community), 150);
   };
 
+  // Close dropdown if clicked outside
   useEffect(() => {
-    providerData.communities.forEach(updateScrollStatus);
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setFilterDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter requests based on title, description, or community
-  const getFilteredRequestsForCommunity = (community) => {
-    return MOCK_CLIENT_REQUESTS.filter((req) => {
-      const titleMatch = req.title.toLowerCase().includes(filterText.toLowerCase());
-      const descMatch = req.description.toLowerCase().includes(filterText.toLowerCase());
-      const communityMatch = community.toLowerCase().includes(filterText.toLowerCase());
-      const reqCommunityMatch = req.type.toLowerCase() === community.toLowerCase();
-
-      // Only include requests of this community, but consider search
-      if (!filterText) return reqCommunityMatch;
-      if (communityMatch) return reqCommunityMatch; // Show full community row if search matches community name
-      return reqCommunityMatch && (titleMatch || descMatch); // Filter cards by title/desc
-    });
+  const handleFilterSelect = (filterType) => {
+    setActiveFilter(filterType);
+    setFilterDropdownOpen(false);
+    setTypeFilter("");
+    setCommunityFilter("");
+    setDateFilter("");
+    setCustomType("");
   };
+
+  const handleTypeClick = (type) => {
+    setTypeFilter(type);
+    if (type !== "Other") setFilterDropdownOpen(false);
+  };
+
+  const handleCommunityClick = (comm) => {
+    if (comm === "join_new") {
+      navigateToProfile && navigateToProfile();
+    } else {
+      setCommunityFilter(comm); 
+      setFilterDropdownOpen(false); 
+    }
+  };
+
+  const handleDateClick = (option) => {
+    setDateFilter(option);
+    setFilterDropdownOpen(false);
+  };
+
+  // Filter requests
+  const filteredRequests = MOCK_CLIENT_REQUESTS.filter(req => {
+    let match = true;
+    
+    if (filterText) {
+      match = req.title.toLowerCase().includes(filterText.toLowerCase()) ||
+        req.description.toLowerCase().includes(filterText.toLowerCase());
+    }
+  
+    if (typeFilter) {
+      match = typeFilter==="Other" 
+      ? match && req.type.toLowerCase().includes(customType.toLowerCase()) 
+      : match && req.type===typeFilter;
+    }
+
+    if (communityFilter) {
+      match = match && req.location===communityFilter;
+    }
+
+    return match;
+  });
+
+  const sortedRequests = dateFilter
+    ? filteredRequests.slice().sort((a,b)=> {
+        const aTime = new Date(a.date).getTime();
+        const bTime = new Date(b.date).getTime();
+        return dateFilter==="recent" ? bTime-aTime : aTime-bTime;
+      })
+    : filteredRequests;
 
   return (
     <div className="page-container flex flex-col space-y-6">
+      <h2 className="text 2x1 font-bold text-client-header">Requests for You</h2>
 
-      {/* Header Controls */}
-      <div className="controls flex flex-wrap gap-4 items-center">
-        <SearchBar
-          value={filterText}
-          onChange={(e) => setFilterText(e.target.value)}
-        />
+      <div className="controls flex flex-wrap gap-4 items-center relative">
+        <SearchBar value={filterText} onChange={(e)=>setFilterText(e.target.value)} />
 
-        <button className="action-btn client-filter-btn flex-shrink-0">
-          Filter Requests By:
-        </button>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            className="action-btn client-filter-btn flex-shrink-0"
+            onClick={()=>setFilterDropdownOpen(!filterDropdownOpen)}
+          >
+            Filter Requests By:
+          </button>
 
-        <button className="action-btn client-post-btn flex-shrink-0">
-          Switch to Map
-        </button>
+          {filterDropdownOpen && (
+            <div className="absolute top-full left-0 mt-2 w-56 bg-white border rounded shadow z-10 p-2 flex flex-col space-y-2">
+              <button className="text-left px-2 py-1 hover:bg-gray-100 rounded" onClick={() => handleFilterSelect("type")}>By Type</button>
+              <button className="text-left px-2 py-1 hover:bg-gray-100 rounded" onClick={() => handleFilterSelect("community")}>By Community</button>
+              <button className="text-left px-2 py-1 hover:bg-gray-100 rounded" onClick={() => handleFilterSelect("date")}>By Date</button>
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Type Filter */}
+      {activeFilter === "type" && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {TYPES.map(type => (
+            <div key={type}>
+              {type !== "Other" ? (
+                <button
+                  className={`action-btn px-3 py-1 ${typeFilter===type ? "bg-blue-500 text-white" : ""}`}
+                  onClick={()=>handleTypeClick(type)}
+                >
+                  {type}
+                </button>
+              ) : (
+                <input
+                  className="border px-3 py-1 rounded"
+                  placeholder="Other type..."
+                  value={typeFilter==="Other"?customType:""}
+                  onChange={e=>{ setTypeFilter("Other"); setCustomType(e.target.value); }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Community Filter */}
+      {activeFilter==="community" && (
+        <div className="flex flex-col gap-2">
+          {providerData.communities.map(comm=>(
+            <button
+              key={comm}
+              className={`action-btn px-3 py-1 ${communityFilter === comm ? "bg-blue-500 text-white" : "" }`}
+              onClick={() => handleCommunityClick(comm)}
+            >
+              {comm}
+            </button>
+          ))}
+          <button
+            className="action-btn px-3 py-1 bg-gray-200 text-gray-800"
+            onClick={()=>handleCommunityClick("join_new")}
+          >
+            Join a New Community
+          </button>
+        </div>
+      )}
+
+      {/* Date Filter */}
+      {activeFilter==="date" && (
+        <div className="flex gap-2">
+          <button className={`action-btn px-3 py-1 ${dateFilter === "recent" ? "bg-blue-500 text-white" : ""}`} 
+          onClick={()=>handleDateClick("recent")}
+          >
+            Recently Added
+          </button>
+          <button className={`action-btn px-3 py-1 ${dateFilter === "oldest" ? "bg-blue-500 text-white" : ""}`} 
+          onClick={()=> handleDateClick("oldest")}
+          >
+            Oldest
+          </button>
+        </div>
+      )}
+
       {/* Community Rows */}
-      <div className="flex flex-col gap-10">
-        {providerData.communities.map((community) => {
-          const filteredRequests = getFilteredRequestsForCommunity(community);
-          if (filteredRequests.length === 0) return null; // hide empty rows
+      <div className="flex flex-col gap-10 mt-4">
+        {providerData.communities.map((community)=>{
+          let communityRequests = sortedRequests.filter(r=>r.location===community);
+          if(!communityRequests.length) return null;
           return (
             <div key={community}>
-              {/* Title + Arrows */}
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-semibold text-xl">{community}</h3>
                 <div className="flex gap-2">
-                  <ArrowButton
-                    direction="left"
-                    onClick={() => scroll(community, "left")}
-                    isActive={scrollStatus[community]?.left}
-                  />
-                  <ArrowButton
-                    direction="right"
-                    onClick={() => scroll(community, "right")}
-                    isActive={scrollStatus[community]?.right}
-                  />
+                  <ArrowButton direction="left" onClick={()=>scroll(community,"left")} isActive={scrollStatus[community]?.left} />
+                  <ArrowButton direction="right" onClick={()=>scroll(community,"right")} isActive={scrollStatus[community]?.right} />
                 </div>
               </div>
 
-              {/* Cards Row */}
-              <div
-                className="flex gap-6 overflow-x-auto scrollbar-hide"
-                ref={communityRefs[community]}
-                onScroll={() => updateScrollStatus(community)}
-              >
-                {filteredRequests.map((req) => (
-                  <RequestCard
-                    key={req.id}
-                    request={req}
-                    onViewDetails={onViewDetails}
-                    onSendOffer={onSendOffer}
-                  />
+              <div className="flex gap-6 overflow-x-auto scrollbar-hide" ref={communityRefs[community]} onScroll={()=>updateScrollStatus(community)}>
+                {communityRequests.map(req=>(
+                  <RequestCard key={req.id} request={req} onViewDetails={onViewDetails} onSendOffer={onSendOffer} />
                 ))}
               </div>
             </div>
           );
         })}
       </div>
-
     </div>
   );
 };

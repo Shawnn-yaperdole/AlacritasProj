@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import Header from './Global/Header';
 import Menu from './Global/Menu';
@@ -20,7 +20,7 @@ import {
   MOCK_PROVIDER_ONGOING,
   MOCK_PROVIDER_HISTORY
 } from './Sample/MockData';
-import { saveOfferRealtime, saveRequestRealtime, saveOffer } from './lib/firebase';
+import { saveRequestRealtime } from './lib/firebase';
 
 function App() {
   const [userMode, setUserMode] = useState('client');
@@ -35,7 +35,7 @@ function App() {
   const [isNewRequest, setIsNewRequest] = useState(false);
   const [tempRequestData, setTempRequestData] = useState(null);
 
-  // Offers state (replaces MOCK_PROVIDER_* and MOCK_CLIENT_*)
+  // Offers state
   const [offers, setOffers] = useState([
     ...MOCK_CLIENT_PENDING,
     ...MOCK_CLIENT_ONGOING,
@@ -80,6 +80,7 @@ function App() {
               setCurrentView('request-details');
               setTempRequestData(newRequest);
             }}
+            navigateToProfile={() => setCurrentView('profile')}
           />
         ) : (
           <ProviderHome
@@ -94,18 +95,31 @@ function App() {
               setSelectedOfferId(maxOfferId + 1);
               setCurrentView('offer-details');
             }}
+            navigateToProfile={() => setCurrentView('profile')}
           />
         );
 
       case 'messages':
-        return <MessagesPage userRole={userMode} />;
+        return (
+          <MessagesPage
+            userRole={userMode}
+            onViewRequestDetails={(requestId) => {
+              setSelectedRequestId(requestId);
+              setCurrentView('request-details');
+            }}
+            onViewOfferDetails={(offerId) => {
+              setSelectedOfferId(offerId);
+              setCurrentView('offer-details');
+            }}
+          />
+        );
 
       case 'offers':
         return (
           <Offers
             role={userMode}
-            offers={offers} // Pass live offers state
-            newOffer={newOffer} // Newly sent offer
+            offers={offers} 
+            newOffer={newOffer} 
             onViewOfferDetails={(offerId) => {
               setSelectedOfferId(offerId);
               setCurrentView('offer-details');
@@ -137,7 +151,7 @@ function App() {
                 } else if (isNewRequest) {
                   MOCK_CLIENT_REQUESTS.push(updatedRequest);
                 }
-                saveRequestRealtime(updatedRequest.id, updatedRequest); // save to Realtime DB
+                saveRequestRealtime(updatedRequest.id, updatedRequest);
               }
               setCurrentView('home');
             }}
@@ -176,13 +190,11 @@ function App() {
             requestData={relatedRequest}
             userRole={userMode}
             isNewOffer={isNewOffer}
-            onBackToClientHome={(updatedOffer) => {
-              setCurrentView(userMode === 'client' ? 'offers' : 'home');
-            }}
+            onBackToClientHome={() => setCurrentView(userMode === 'client' ? 'offers' : 'home')}
             onBackToProviderHome={(newOfferPayload) => {
               if (newOfferPayload) {
                 setNewOffer(newOfferPayload);
-                setOffers(prev => [...prev, newOfferPayload]); // update offers state
+                setOffers(prev => [...prev, newOfferPayload]);
               }
               setCurrentView('offers');
             }}

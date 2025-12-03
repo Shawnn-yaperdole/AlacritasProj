@@ -1,17 +1,12 @@
 // src/Global/Messages.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { MOCK_CHATS, CHAT_MESSAGES, ACCEPTED_OFFER, MOCK_CLIENT, MOCK_PROVIDER } from "../Sample/MockData";
-import { sendMessage, subscribeToChatMessages, subscribeToChats, createChat } from "../lib/firebase";
+import { sendMessage, subscribeToChatMessages, subscribeToChats } from "../lib/firebase";
 
-const MessagesPage = ({ userRole = 'client' }) => {
+const MessagesPage = ({ userRole = 'client', onViewRequestDetails, onViewOfferDetails }) => {
   const [chats, setChats] = useState(MOCK_CHATS);
   const [selectedChatId, setSelectedChatId] = useState(chats[0]?.id || null);
   const [search, setSearch] = useState("");
-  const [showNewForm, setShowNewForm] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newAvatar, setNewAvatar] = useState("");
-  const [newMessage, setNewMessage] = useState("");
-  const [newError, setNewError] = useState("");
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const messagesRef = useRef(null);
@@ -20,7 +15,7 @@ const MessagesPage = ({ userRole = 'client' }) => {
   const selectedChat = chats.find(c => c.id === selectedChatId);
   const currentUserPic = userRole === 'client' ? MOCK_CLIENT.profilePic : MOCK_PROVIDER.profilePic;
 
-  // Establish local user id
+  // Generate or retrieve a local user ID
   useEffect(() => {
     const key = 'alacritas_user_id';
     let id = null;
@@ -46,7 +41,7 @@ const MessagesPage = ({ userRole = 'client' }) => {
     return () => unsub && unsub();
   }, []);
 
-  // Subscribe to messages in selected chat
+  // Subscribe to messages for the selected chat
   useEffect(() => {
     if (!selectedChatId) {
       setMessages([]);
@@ -63,7 +58,6 @@ const MessagesPage = ({ userRole = 'client' }) => {
     return () => unsubscribe && unsubscribe();
   }, [selectedChatId]);
 
-  // Send a new message
   const handleSend = async () => {
     if (!inputValue.trim() || !selectedChatId) return;
     const msg = {
@@ -95,40 +89,6 @@ const MessagesPage = ({ userRole = 'client' }) => {
             onChange={e => setSearch(e.target.value)}
             className="search-input w-full rounded border px-3 py-2"
           />
-          <div className="mt-2 flex gap-2 items-center">
-            <button className="action-btn px-3 py-1" onClick={() => setShowNewForm(s => !s)}>
-              {showNewForm ? 'Cancel' : 'New Chat'}
-            </button>
-            {showNewForm && (
-              <div className="w-full mt-2 p-2 border rounded bg-white">
-                <input className="w-full mb-1 p-1 border rounded" placeholder="Chat name" value={newName} onChange={e => { setNewName(e.target.value); setNewError(''); }} />
-                <input className="w-full mb-1 p-1 border rounded" placeholder="Avatar URL (optional)" value={newAvatar} onChange={e => setNewAvatar(e.target.value)} />
-                <input className="w-full mb-1 p-1 border rounded" placeholder="Initial message (optional)" value={newMessage} onChange={e => setNewMessage(e.target.value)} />
-                {newError && <div className="text-sm text-red-600 mb-2">{newError}</div>}
-                <div className="flex justify-end">
-                  <button
-                    className="action-btn px-3 py-1"
-                    onClick={async () => {
-                      if (!newName) { setNewError('Please provide a chat name'); return; }
-                      try {
-                        const chatId = await createChat({ name: newName, avatar: newAvatar });
-                        if (newMessage && chatId) {
-                          await sendMessage(chatId, { text: newMessage, sender: 'Self', senderRole: userRole, senderId: localUserId, timestamp: Date.now() });
-                        }
-                        setNewName(''); setNewAvatar(''); setNewMessage(''); setShowNewForm(false);
-                        setSelectedChatId(chatId);
-                      } catch (e) {
-                        console.error('Failed to create chat', e);
-                        setNewError('Failed to create chat. See console.');
-                      }
-                    }}
-                  >
-                    Create
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0">
@@ -168,7 +128,19 @@ const MessagesPage = ({ userRole = 'client' }) => {
                 <h3 className="font-bold text-lg">{ACCEPTED_OFFER.title}</h3>
                 <p className="text-gray-500 text-sm">{ACCEPTED_OFFER.location} • {ACCEPTED_OFFER.date}</p>
                 <p className="text-green-600 font-semibold mt-1">Accepted Price: {ACCEPTED_OFFER.price}</p>
-                <a href={ACCEPTED_OFFER.fullDescriptionLink} className="text-blue-500 text-sm mt-2 hover:underline">View full description</a>
+
+                <button
+                  className="text-blue-500 text-sm mt-2 hover:underline text-left"
+                  onClick={() => {
+                    if (userRole === 'client' && onViewOfferDetails) {
+                      onViewOfferDetails(ACCEPTED_OFFER.id);
+                    } else if (userRole === 'provider' && onViewRequestDetails) {
+                      onViewRequestDetails(ACCEPTED_OFFER.requestId);
+                    }
+                  }}
+                >
+                  View full description
+                </button>
               </div>
             </div>
 
@@ -185,9 +157,7 @@ const MessagesPage = ({ userRole = 'client' }) => {
                   >
                     {!isSent && <img src={avatarSrc} alt="Avatar" className="w-8 h-8 rounded-full" />}
                     <div
-                      className={`px-3 py-2 rounded-xl mb-2 max-w-[60%] ${
-                        isSent ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'
-                      }`}
+                      className={`px-3 py-2 rounded-xl mb-2 max-w-[60%] ${isSent ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'}`}
                     >
                       {msg.text}
                     </div>
