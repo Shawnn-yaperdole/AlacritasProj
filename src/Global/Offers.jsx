@@ -1,40 +1,41 @@
 // src/Global/Offers.jsx
 import React, { useState, useEffect } from "react";
-import {
-  MOCK_CLIENT_PENDING,
-  MOCK_CLIENT_ONGOING,
-  MOCK_CLIENT_HISTORY,
-  MOCK_PROVIDER_PENDING,
-  MOCK_PROVIDER_ONGOING,
-  MOCK_PROVIDER_HISTORY,
-  MOCK_CLIENT_REQUESTS
-} from "../Sample/MockData";
+import { saveOfferRealtime } from "../lib/firebase";
 
-const Offers = ({ role, onViewOfferDetails, newOffer }) => {
+const Offers = ({ role, offers, onOfferUpdate, onViewOfferDetails }) => {
   const isClient = role === "client";
   const isProvider = role === "provider";
 
   const [currentTab, setCurrentTab] = useState("pending");
   const [filterText, setFilterText] = useState("");
 
-  const [clientPending, setClientPending] = useState(MOCK_CLIENT_PENDING);
-  const [clientOngoing, setClientOngoing] = useState(MOCK_CLIENT_ONGOING);
-  const [clientHistory, setClientHistory] = useState(MOCK_CLIENT_HISTORY);
+  // Separate state arrays for each tab
+  const [clientPending, setClientPending] = useState([]);
+  const [clientOngoing, setClientOngoing] = useState([]);
+  const [clientHistory, setClientHistory] = useState([]);
 
-  const [providerPending, setProviderPending] = useState(MOCK_PROVIDER_PENDING);
-  const [providerOngoing, setProviderOngoing] = useState(MOCK_PROVIDER_ONGOING);
-  const [providerHistory, setProviderHistory] = useState(MOCK_PROVIDER_HISTORY);
+  const [providerPending, setProviderPending] = useState([]);
+  const [providerOngoing, setProviderOngoing] = useState([]);
+  const [providerHistory, setProviderHistory] = useState([]);
 
-  // ---------- Update state if a new offer is received ----------
+  // Sync offers prop into categorized state
   useEffect(() => {
-    if (newOffer) {
-      if (isProvider && newOffer.status === "pending") {
-        setProviderPending(prev => [...prev, newOffer]);
-      } else if (isClient && newOffer.status === "pending") {
-        setClientPending(prev => [...prev, newOffer]);
-      }
+    if (!offers || offers.length === 0) return;
+
+    const pending = offers.filter(o => o.status === "pending");
+    const ongoing = offers.filter(o => o.status === "accepted" || o.status === "ongoing");
+    const history = offers.filter(o => ["declined", "finished", "cancelled"].includes(o.status));
+
+    if (isClient) {
+      setClientPending(pending);
+      setClientOngoing(ongoing);
+      setClientHistory(history);
+    } else if (isProvider) {
+      setProviderPending(pending);
+      setProviderOngoing(ongoing);
+      setProviderHistory(history);
     }
-  }, [newOffer, isProvider, isClient]);
+  }, [offers, isClient, isProvider]);
 
   const getCurrentData = () => {
     if (isClient) {
@@ -67,23 +68,38 @@ const Offers = ({ role, onViewOfferDetails, newOffer }) => {
       case "pending":
         return "status pending";
       case "accepted":
+      case "ongoing":
         return "status accepted";
-      case "denied":
+      case "declined":
         return "status denied";
       case "cancelled":
         return "status cancelled";
       case "finished":
         return "status finished";
-      case "ongoing":
-        return "status accepted";
       default:
         return "";
     }
   };
 
-  const moveOffer = (offer, from, to, setFrom, setTo, newStatus) => {
-    setFrom(list => list.filter(o => o.id !== offer.id));
-    setTo(list => [...list, { ...offer, status: newStatus }]);
+  const moveOffer = async (offer, from, to, setFrom, setTo, newStatus) => {
+    try {
+      // Update local state immediately for responsive UI
+      setFrom(list => list.filter(o => o.id !== offer.id));
+      setTo(list => [...list, { ...offer, status: newStatus }]);
+
+      // Update in Firebase
+      const updated = { ...offer, status: newStatus };
+      await saveOfferRealtime(updated.id, updated);
+      
+      // Update parent component
+      onOfferUpdate(updated);
+    } catch (error) {
+      console.error("Failed to update offer:", error);
+      // Revert local state on error
+      setFrom(list => [...list, offer]);
+      setTo(list => list.filter(o => o.id !== offer.id));
+      alert("Failed to update offer. Please try again.");
+    }
   };
 
   const filteredData = getCurrentData().filter(item =>
@@ -123,92 +139,89 @@ const Offers = ({ role, onViewOfferDetails, newOffer }) => {
 
       {/* Offer Cards */}
       <div className="card-list">
-        {filteredData.map(offer => {
-          // Find the corresponding request
-          const request = MOCK_CLIENT_REQUESTS.find(r => r.id === offer.requestId);
-
-          return (
-            <div key={offer.id} className="offers-card flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-semibold text-lg truncate">{offer.title}</h3>
-                  <span className={statusColor(offer.status)}>
-                    {offer.status.toUpperCase()}
-                  </span>
-                </div>
-                <p className="truncate">
-                  {isClient ? `From: ${offer.provider}` : `To: ${offer.client}`}
-                </p>
-                <p className="text-sm text-gray-600 truncate">{offer.description}</p>
-                <p className="font-semibold mt-2">{offer.amount}</p>
+        {filteredData.map(offer => (
+          <div key={offer.id} className="offers-card flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-semibold text-lg truncate">{offer.title}</h3>
+                <span className={statusColor(offer.status)}>
+                  {offer.status.toUpperCase()}
+                </span>
               </div>
+              <p className="truncate">
+                {isClient 
+                  ? `From: ${offer.provider?.fullName || offer.provider}` 
+                  : `To: ${offer.client || 'N/A'}`}
+              </p>
+              <p className="text-sm text-gray-600 truncate">{offer.description}</p>
+              <p className="font-semibold mt-2">{offer.amount}</p>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-2 mt-3">
-                {isClient && currentTab === "pending" && (
-                  <div className="flex gap-2">
-                    <button
-                      className="action-btn accept-btn flex-1"
-                      onClick={() =>
-                        moveOffer(
-                          offer,
-                          clientPending,
-                          clientOngoing,
-                          setClientPending,
-                          setClientOngoing,
-                          "ongoing"
-                        )
-                      }
-                    >
-                      Accept
-                    </button>
-                    <button
-                      className="action-btn decline-btn flex-1"
-                      onClick={() =>
-                        moveOffer(
-                          offer,
-                          clientPending,
-                          clientHistory,
-                          setClientPending,
-                          setClientHistory,
-                          "denied"
-                        )
-                      }
-                    >
-                      Decline
-                    </button>
-                  </div>
-                )}
-
-                {isProvider && currentTab === "pending" && (
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2 mt-3">
+              {isClient && currentTab === "pending" && (
+                <div className="flex gap-2">
                   <button
-                    className="action-btn decline-btn w-full"
+                    className="action-btn accept-btn flex-1"
                     onClick={() =>
                       moveOffer(
                         offer,
-                        providerPending,
-                        providerHistory,
-                        setProviderPending,
-                        setProviderHistory,
-                        "cancelled"
+                        clientPending,
+                        clientOngoing,
+                        setClientPending,
+                        setClientOngoing,
+                        "accepted"
                       )
                     }
                   >
-                    Cancel
+                    Accept
                   </button>
-                )}
+                  <button
+                    className="action-btn decline-btn flex-1"
+                    onClick={() =>
+                      moveOffer(
+                        offer,
+                        clientPending,
+                        clientHistory,
+                        setClientPending,
+                        setClientHistory,
+                        "declined"
+                      )
+                    }
+                  >
+                    Decline
+                  </button>
+                </div>
+              )}
 
-                {/* View Full Details */}
+              {isProvider && currentTab === "pending" && (
                 <button
-                  className="action-btn viewinfo-btn w-full"
-                  onClick={() => onViewOfferDetails(offer.id)}
+                  className="action-btn decline-btn w-full"
+                  onClick={() =>
+                    moveOffer(
+                      offer,
+                      providerPending,
+                      providerHistory,
+                      setProviderPending,
+                      setProviderHistory,
+                      "cancelled"
+                    )
+                  }
                 >
-                  View Full Details
+                  Cancel
                 </button>
-              </div>
+              )}
+
+              {/* View Full Details */}
+              <button
+                className="action-btn viewinfo-btn w-full"
+                onClick={() => onViewOfferDetails(offer.id)}
+              >
+                View Full Details
+              </button>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );

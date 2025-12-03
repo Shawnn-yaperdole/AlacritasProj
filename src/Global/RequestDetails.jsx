@@ -4,7 +4,6 @@ import { uploadFileToCloudinary } from "../lib/cloudinary";
 import { saveRequest, saveRequestRealtime } from "../lib/firebase";
 import { deleteRequest, deleteRequestRealtime } from "../lib/firebase";
 import { MOCK_CLIENT_REQUESTS } from "../Sample/MockData";
-import { saveOffer, saveOfferRealtime } from "../lib/firebase";
 
 const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewRequest, onGoToOffer, onViewClientProfile}) => {
   const [title, setTitle] = useState(requestData.title || "");
@@ -55,12 +54,7 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
         MOCK_CLIENT_REQUESTS.splice(index, 1);
       }
 
-      try {
-        await deleteRequestRealtime(requestData.id);
-      } catch (rtdbErr) {
-        console.warn("Realtime DB delete failed, falling back to Firestore", rtdbErr);
-        await deleteRequest(requestData.id);
-      }
+      await deleteRequestRealtime(requestData.id);
 
       if (onBackToClientHome) onBackToClientHome(null);
     } catch (err) {
@@ -79,28 +73,8 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
     setIsSaving(true);
     setSaveMessage("");
 
-    let payload = {
-      ...requestData,
-      title,
-      type,
-      location,
-      description,
-      thumbnail,
-      images: additionalImages.map((img) => img.src),
-    };
-
-    if (isNewRequest) {
-      const maxId = MOCK_CLIENT_REQUESTS.reduce((m, r) => Math.max(m, r.id), 0);
-      payload.id = maxId + 1;
-      MOCK_CLIENT_REQUESTS.push(payload);
-    } else {
-      const index = MOCK_CLIENT_REQUESTS.findIndex((r) => r.id === payload.id);
-      if (index !== -1) {
-        MOCK_CLIENT_REQUESTS[index] = payload;
-      }
-    }
-
     try {
+      // Step 1: Upload all images to Cloudinary
       const uploaded = await Promise.all(
         additionalImages.map(async (item) => {
           if (item.file) {
@@ -114,40 +88,57 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
       const imagesUrls = uploaded.map((u) => u.src);
       let thumbnailUrl = thumbnail;
 
+      // Update thumbnail if it was a local URL
       if (thumbnailUrl && !thumbnailUrl.startsWith("http")) {
         const idx = additionalImages.findIndex((a) => a.src === thumbnailUrl);
         if (idx !== -1 && imagesUrls[idx]) thumbnailUrl = imagesUrls[idx];
       }
 
-      setAdditionalImages(imagesUrls.map((src) => ({ src })));
-      setThumbnail(imagesUrls.includes(thumbnailUrl) ? thumbnailUrl : imagesUrls[0] || "");
+      // Ensure thumbnail is in the uploaded images
+      if (!imagesUrls.includes(thumbnailUrl)) {
+        thumbnailUrl = imagesUrls[0] || "";
+      }
 
-      payload = {
+      // Step 2: Create payload with uploaded URLs
+      let payload = {
         ...requestData,
         title,
         type,
         location,
         description,
-        thumbnail: imagesUrls.includes(thumbnailUrl) ? thumbnailUrl : imagesUrls[0] || "",
+        thumbnail: thumbnailUrl,
         images: imagesUrls,
       };
 
-      if (requestData?.id) {
-        try {
-          await saveRequestRealtime(requestData.id, payload);
-        } catch (rtdbErr) {
-          console.warn("Realtime DB save failed, falling back to Firestore", rtdbErr);
-          await saveRequest(requestData.id, payload);
-        }
+      // Step 3: Assign ID for new requests
+      if (isNewRequest) {
+        const maxId = MOCK_CLIENT_REQUESTS.reduce((m, r) => Math.max(m, r.id), 0);
+        payload.id = maxId + 1;
       }
 
-      if (onBackToClientHome) onBackToClientHome(payload);
+      // Step 4: Save to Firebase Realtime Database
+      const idToSave = payload.id || requestData?.id;
+      if (idToSave) {
+        await saveRequestRealtime(idToSave, payload);
+        console.log("Saved to Realtime Database successfully");
+      }
 
-      setSaveMessage("Saved successfully.");
-      setTimeout(() => setSaveMessage(""), 2500);
+      // Step 5: Update local state
+      setAdditionalImages(imagesUrls.map((src) => ({ src })));
+      setThumbnail(thumbnailUrl);
+
+      // Step 6: Show success message
+      setSaveMessage("Saved successfully!");
+
+      // Step 7: Navigate back after a short delay (so user sees success message)
+      setTimeout(() => {
+        if (onBackToClientHome) onBackToClientHome(payload);
+      }, 1000);
+
     } catch (err) {
       console.error("Failed to save request", err);
-      setSaveMessage("Failed to save request: " + (err.message || err));
+      setSaveMessage("Failed to save: " + (err.message || err));
+      alert("Failed to save request. Please check console for details.");
     } finally {
       setIsSaving(false);
     }
@@ -158,25 +149,30 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
 
   return (
     <div className="page-container flex flex-col space-y-6">
-      <h2 className="text-2xl font-bold">{title}</h2>
+      <h2 className="text-2xl font-bold">{title || "New Request"}</h2>
 
       {/* Request Info */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* Images Section */}
         <div className="flex flex-col gap-4 items-center">
           <div className="rd-card relative w-64 h-40 flex flex-col items-center justify-center">
-            {thumbnail && (
+            {thumbnail ? (
               <img
                 src={thumbnail}
                 alt="Thumbnail"
                 className="w-64 h-40 object-cover rounded-lg mb-2"
               />
+            ) : (
+              <div className="w-64 h-40 bg-gray-200 rounded-lg mb-2 flex items-center justify-center text-gray-500">
+                No thumbnail
+              </div>
             )}
 
             {userRole === "client" && (
               <button
                 onClick={() => setChooseThumbnailOpen(true)}
                 className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                disabled={additionalImages.length === 0}
               >
                 {thumbnail ? "Change Thumbnail" : "Choose Thumbnail"}
               </button>
@@ -188,7 +184,7 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
               onClick={() => setViewAllOpen(true)}
               className="mt-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
             >
-              View All Images
+              View All Images ({additionalImages.length})
             </button>
           )}
 
@@ -197,7 +193,7 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
               onClick={() => setProviderViewOpen(true)}
               className="mt-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
             >
-              View All Images
+              View All Images ({additionalImages.length})
             </button>
           )}
         </div>
@@ -268,7 +264,7 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
           {userRole === "provider" && (
             <div className="flex flex-wrap gap-4 mt-2">
               <button className="action-btn btn-secondary btn-accent px-4 py-2"
-              onClick={() => onGoToOffer && onGoToOffer (requestData)}
+              onClick={() => onGoToOffer && onGoToOffer(requestData)}
               >
                 Send Offer
               </button>
@@ -287,7 +283,7 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
         <div className="flex justify-center mt-4 gap-4">
           <button
             className={`action-btn client-post-btn px-6 py-2 ${
-              isSaveDisabled ? "opacity-50 cursor-not-allowed" : ""
+              isSaveDisabled || isSaving ? "opacity-50 cursor-not-allowed" : ""
             }`}
             onClick={handleSaveChanges}
             disabled={isSaveDisabled || isSaving}
@@ -298,6 +294,7 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
           <button
             className="action-btn btn-secondary px-6 py-2"
             onClick={() => onBackToClientHome(null)}
+            disabled={isSaving}
           >
             Cancel
           </button>
@@ -306,10 +303,20 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
             <button
               className="action-btn btn-secondary px-6 py-2"
               onClick={handleDeleteRequest}
+              disabled={isSaving}
             >
               Delete
             </button>
           )}
+        </div>
+      )}
+
+      {/* Save Message */}
+      {saveMessage && (
+        <div className={`text-center p-2 rounded ${
+          saveMessage.includes("Failed") ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+        }`}>
+          {saveMessage}
         </div>
       )}
 

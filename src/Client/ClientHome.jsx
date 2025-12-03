@@ -1,6 +1,6 @@
 // src/Client/ClientHome.jsx
 import React, { useState, useRef, useEffect } from "react";
-import { MOCK_CLIENT_REQUESTS, MOCK_CLIENT } from "../Sample/MockData";
+import { MOCK_CLIENT } from "../Sample/MockData";
 
 // Reusable SearchBar component
 const SearchBar = ({ value, onChange }) => (
@@ -41,7 +41,7 @@ const RequestCard = ({ request, onViewDetails }) => (
   </div>
 );
 
-const ClientHome = ({ onViewDetails, onCreateRequest, navigateToProfile }) => {
+const ClientHome = ({ requests = [], onViewDetails, onCreateRequest, navigateToProfile }) => {
   const [filterText, setFilterText] = useState("");
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState(null);
@@ -69,7 +69,7 @@ const ClientHome = ({ onViewDetails, onCreateRequest, navigateToProfile }) => {
 
   const handleFilterSelect = (filterType) => {
     setActiveFilter(filterType);
-    setFilterDropdownOpen(false); // Close dropdown when a filter is selected
+    setFilterDropdownOpen(false);
     setTypeFilter("");
     setCommunityFilter("");
     setDateFilter("");
@@ -94,7 +94,7 @@ const ClientHome = ({ onViewDetails, onCreateRequest, navigateToProfile }) => {
     setFilterDropdownOpen(false);
   };
 
-  const filteredRequests = MOCK_CLIENT_REQUESTS.filter(req => {
+  const filteredRequests = requests.filter(req => {
     let match = true;
 
     if (filterText) match = req.title.toLowerCase().includes(filterText.toLowerCase());

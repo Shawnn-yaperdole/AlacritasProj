@@ -133,7 +133,7 @@ const MessagesPage = ({ userRole = 'client', onViewRequestDetails, onViewOfferDe
                   className="text-blue-500 text-sm mt-2 hover:underline text-left"
                   onClick={() => {
                     if (userRole === 'client' && onViewOfferDetails) {
-                      onViewOfferDetails(ACCEPTED_OFFER.id);
+                      onViewOfferDetails(ACCEPTED_OFFER.requestId);
                     } else if (userRole === 'provider' && onViewRequestDetails) {
                       onViewRequestDetails(ACCEPTED_OFFER.requestId);
                     }

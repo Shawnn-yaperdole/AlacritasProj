@@ -1,110 +1,127 @@
 // src/lib/firebase.js
-// Lightweight Firebase (Firestore) helper. Uses Vite env vars.
+// Lightweight Firebase (Firestore + Realtime DB) helper. Uses Vite env vars.
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import { getDatabase, ref, set as rtdbSet, push, onValue, off, query, orderByChild, update as rtdbUpdate } from 'firebase/database';
-import { remove } from "firebase/database"; // for Realtime DB
-import { deleteDoc } from "firebase/firestore"; // for Firestore
+import { getFirestore, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { 
+  getDatabase, 
+  ref, 
+  set as rtdbSet, 
+  push, 
+  onValue, 
+  off, 
+  query, 
+  orderByChild, 
+  update as rtdbUpdate,
+  remove 
+} from 'firebase/database';
 
+// Use environment variables from .env file
 const firebaseConfig = {
-  apiKey: "AIzaSyAKwB7v9CUaniJbSohzVCKh7jTjvo-XflA",
-  authDomain: "alcaritas.firebaseapp.com",
-  databaseURL: "https://alcaritas-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "alcaritas",
-  storageBucket: "alcaritas.firebasestorage.app",
-  messagingSenderId: "1075219304852",
-  appId: "1:1075219304852:web:781268b31ce620a68a3f81",
-  measurementId: "G-3JRF51F1BK"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 let firestoreDb = null;
 let realtimeDb = null;
 let app = null;
+
 try {
   app = initializeApp(firebaseConfig);
+  
   try {
     firestoreDb = getFirestore(app);
   } catch (e) {
-    // firestore may not be available in some builds/environments
-    // eslint-disable-next-line no-console
     console.warn('Firestore init failed', e);
   }
 
   try {
-    // initialize realtime DB only if databaseURL is provided
     if (firebaseConfig.databaseURL) {
       realtimeDb = getDatabase(app);
     }
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.warn('Realtime DB init failed', e);
   }
 } catch (err) {
-  // eslint-disable-next-line no-console
   console.warn('Firebase initialization failed', err);
 }
 
-// Firestore save (existing behaviour)
+// ========== REQUEST FUNCTIONS ==========
+
+// Firestore save
 export async function saveRequest(requestId, data) {
-  if (!firestoreDb) throw new Error('Firestore not initialized. Set VITE_FIREBASE_* env vars.');
+  if (!firestoreDb) throw new Error('saveRequest: Firestore not initialized');
   const docRef = doc(firestoreDb, 'requests', String(requestId));
   await setDoc(docRef, data, { merge: true });
   return docRef;
 }
 
-// Realtime Database save helper
+// Realtime Database save
 export async function saveRequestRealtime(requestId, data) {
-  if (!realtimeDb) throw new Error('Realtime Database not initialized. Set VITE_FIREBASE_DATABASE_URL in .env');
+  if (!realtimeDb) throw new Error('saveRequestRealtime: Realtime Database not initialized');
   const nodeRef = ref(realtimeDb, `requests/${String(requestId)}`);
   await rtdbSet(nodeRef, data);
   return nodeRef;
 }
 
-export const deleteRequestRealtime = async (id) => {
-  if (!id) throw new Error("No request ID provided");
-  if (!realtimeDb) throw new Error("Realtime DB not initialized");
+// Realtime Database partial update
+export async function updateRequestRealtime(requestId, updates) {
+  if (!realtimeDb) throw new Error('updateRequestRealtime: Realtime Database not initialized');
+  const nodeRef = ref(realtimeDb, `requests/${String(requestId)}`);
+  await rtdbUpdate(nodeRef, updates);
+  return nodeRef;
+}
+
+// Delete from Realtime Database
+export async function deleteRequestRealtime(id) {
+  if (!id) throw new Error("deleteRequestRealtime: No request ID provided");
+  if (!realtimeDb) throw new Error("deleteRequestRealtime: Realtime DB not initialized");
   const dbRef = ref(realtimeDb, `requests/${id}`);
   await remove(dbRef);
-};
+}
 
 // Delete from Firestore
-export const deleteRequest = async (id) => {
-  if (!id) throw new Error("No request ID provided");
-  if (!firestoreDb) throw new Error("Firestore not initialized");
+export async function deleteRequest(id) {
+  if (!id) throw new Error("deleteRequest: No request ID provided");
+  if (!firestoreDb) throw new Error("deleteRequest: Firestore not initialized");
   const docRef = doc(firestoreDb, "requests", id);
   await deleteDoc(docRef);
-};
+}
 
-// Profile save helpers
+// ========== PROFILE FUNCTIONS ==========
+
 export async function saveProfileRealtime(profileKey, data) {
-  if (!realtimeDb) throw new Error('Realtime Database not initialized. Set VITE_FIREBASE_DATABASE_URL in .env');
+  if (!realtimeDb) throw new Error('saveProfileRealtime: Realtime Database not initialized');
   const nodeRef = ref(realtimeDb, `profiles/${String(profileKey)}`);
   await rtdbSet(nodeRef, data);
   return nodeRef;
 }
 
 export async function saveProfile(profileKey, data) {
-  if (!firestoreDb) throw new Error('Firestore not initialized. Set VITE_FIREBASE_* env vars.');
+  if (!firestoreDb) throw new Error('saveProfile: Firestore not initialized');
   const docRef = doc(firestoreDb, 'profiles', String(profileKey));
   await setDoc(docRef, data, { merge: true });
   return docRef;
 }
 
-// Messaging helpers (Realtime Database)
+// ========== MESSAGING FUNCTIONS ==========
+
 export async function sendMessage(chatId, message) {
-  if (!realtimeDb) throw new Error('Realtime Database not initialized. Set VITE_FIREBASE_DATABASE_URL in .env');
+  if (!realtimeDb) throw new Error('sendMessage: Realtime Database not initialized');
   const msgsRef = ref(realtimeDb, `chats/${String(chatId)}/messages`);
-  // push writes a new child with a unique key
   const timestamp = message.timestamp || Date.now();
   const payload = { ...message, timestamp };
   const pushedRef = await push(msgsRef, payload);
 
-  // update chat metadata (last message + time) to help list views show new activity
   try {
     const metaRef = ref(realtimeDb, `chats/${String(chatId)}/meta`);
     await rtdbUpdate(metaRef, { lastMsg: message.text || '', lastMsgTime: timestamp });
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.warn('Failed to update chat meta', e);
   }
 
@@ -113,13 +130,15 @@ export async function sendMessage(chatId, message) {
 
 export function subscribeToChatMessages(chatId, onMessages) {
   if (!realtimeDb) {
-    // no-op when RTDB not available
-    // eslint-disable-next-line no-console
     console.warn('subscribeToChatMessages: Realtime DB not initialized');
     return () => {};
   }
 
-  const msgsQuery = query(ref(realtimeDb, `chats/${String(chatId)}/messages`), orderByChild('timestamp'));
+  const msgsQuery = query(
+    ref(realtimeDb, `chats/${String(chatId)}/messages`), 
+    orderByChild('timestamp')
+  );
+  
   const listener = onValue(msgsQuery, (snapshot) => {
     const val = snapshot.val() || {};
     const arr = Object.keys(val)
@@ -132,16 +151,13 @@ export function subscribeToChatMessages(chatId, onMessages) {
     try {
       off(msgsQuery);
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn('Error removing RTDB listener', e);
     }
   };
 }
 
-// Subscribe to chats list and their meta (for chat list views)
 export function subscribeToChats(onChats) {
   if (!realtimeDb) {
-    // eslint-disable-next-line no-console
     console.warn('subscribeToChats: Realtime DB not initialized');
     return () => {};
   }
@@ -160,7 +176,6 @@ export function subscribeToChats(onChats) {
       };
     });
 
-    // sort by lastMsgTime desc
     list.sort((a, b) => (b.lastMsgTime || 0) - (a.lastMsgTime || 0));
     onChats(list);
   });
@@ -169,25 +184,23 @@ export function subscribeToChats(onChats) {
     try {
       off(chatsRef);
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn('Error removing chats listener', e);
     }
   };
 }
 
-// Create a new chat with meta information. Returns the new chatId.
 export async function createChat(meta = {}) {
-  if (!realtimeDb) throw new Error('Realtime Database not initialized. Set VITE_FIREBASE_DATABASE_URL in .env');
+  if (!realtimeDb) throw new Error('createChat: Realtime Database not initialized');
   const chatsRef = ref(realtimeDb, 'chats');
   const node = await push(chatsRef, { meta });
   return node.key;
 }
 
-// ---------- Offer save helpers ----------
+// ========== OFFER FUNCTIONS ==========
 
 // Save offer in Firestore
 export async function saveOffer(offerId, data) {
-  if (!firestoreDb) throw new Error('Firestore not initialized');
+  if (!firestoreDb) throw new Error('saveOffer: Firestore not initialized');
   const docRef = doc(firestoreDb, 'offers', String(offerId));
   await setDoc(docRef, data, { merge: true });
   return docRef;
@@ -195,25 +208,70 @@ export async function saveOffer(offerId, data) {
 
 // Save offer in Realtime Database
 export async function saveOfferRealtime(offerId, data) {
-  if (!realtimeDb) throw new Error('Realtime Database not initialized');
+  if (!realtimeDb) throw new Error('saveOfferRealtime: Realtime Database not initialized');
   const nodeRef = ref(realtimeDb, `offers/${String(offerId)}`);
   await rtdbSet(nodeRef, data);
   return nodeRef;
 }
 
+// Partial update offer in Realtime Database
+export async function updateOfferRealtime(offerId, updates) {
+  if (!realtimeDb) throw new Error('updateOfferRealtime: Realtime Database not initialized');
+  const nodeRef = ref(realtimeDb, `offers/${String(offerId)}`);
+  await rtdbUpdate(nodeRef, updates);
+  return nodeRef;
+}
+
 // Delete offer from Firestore
 export async function deleteOffer(offerId) {
-  if (!firestoreDb) throw new Error('Firestore not initialized');
+  if (!firestoreDb) throw new Error('deleteOffer: Firestore not initialized');
   const docRef = doc(firestoreDb, 'offers', String(offerId));
   await deleteDoc(docRef);
 }
 
 // Delete offer from Realtime Database
 export async function deleteOfferRealtime(offerId) {
-  if (!realtimeDb) throw new Error('Realtime Database not initialized');
+  if (!realtimeDb) throw new Error('deleteOfferRealtime: Realtime Database not initialized');
   const dbRef = ref(realtimeDb, `offers/${String(offerId)}`);
   await remove(dbRef);
 }
 
+// Subscribe to offers with real-time updates
+export function subscribeToOffers(onOffers) {
+  if (!realtimeDb) {
+    console.warn('subscribeToOffers: Realtime DB not initialized');
+    return () => {};
+  }
 
-export { firestoreDb as db, realtimeDb as rtdb, app };
+  const offersRef = ref(realtimeDb, 'offers');
+  const listener = onValue(offersRef, (snapshot) => {
+    const val = snapshot.val() || {};
+    const list = Object.keys(val).map(k => ({ 
+      id: Number(k), 
+      ...val[k] 
+    }));
+    onOffers(list);
+  });
+
+  return () => {
+    try {
+      off(offersRef);
+    } catch (e) {
+      console.warn('Error removing offers listener', e);
+    }
+  };
+}
+
+// ========== UTILITY FUNCTIONS ==========
+
+// Check Firebase initialization status
+export function getFirebaseStatus() {
+  return {
+    firestoreInitialized: !!firestoreDb,
+    realtimeDbInitialized: !!realtimeDb,
+    appInitialized: !!app
+  };
+}
+
+// ========== EXPORTS ==========
+export { firestoreDb as db, realtimeDb, app };
