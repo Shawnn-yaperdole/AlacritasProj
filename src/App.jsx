@@ -27,15 +27,12 @@ function App() {
   const [currentView, setCurrentView] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Track selected request & offer
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [selectedOfferId, setSelectedOfferId] = useState(null);
 
-  // Track new/existing requests
   const [isNewRequest, setIsNewRequest] = useState(false);
   const [tempRequestData, setTempRequestData] = useState(null);
 
-  // Offers state
   const [offers, setOffers] = useState([
     ...MOCK_CLIENT_PENDING,
     ...MOCK_CLIENT_ONGOING,
@@ -51,7 +48,6 @@ function App() {
     setCurrentView('home');
   };
 
-  // ----- RENDER LOGIC -----
   const renderContent = () => {
     switch (currentView) {
       case 'home':
@@ -77,8 +73,8 @@ function App() {
                 images: [],
               };
               setSelectedRequestId(newId);
-              setCurrentView('request-details');
               setTempRequestData(newRequest);
+              setCurrentView('request-details');
             }}
             navigateToProfile={() => setCurrentView('profile')}
           />
@@ -118,8 +114,8 @@ function App() {
         return (
           <Offers
             role={userMode}
-            offers={offers} 
-            newOffer={newOffer} 
+            offers={offers}
+            newOffer={newOffer}
             onViewOfferDetails={(offerId) => {
               setSelectedOfferId(offerId);
               setCurrentView('offer-details');
@@ -128,12 +124,10 @@ function App() {
         );
 
       case 'profile':
-        return <Profile role={userMode} />;
+        return <Profile role={userMode} setCurrentView={setCurrentView} />;
 
       case 'request-details': {
-        const existingRequest = MOCK_CLIENT_REQUESTS.find(
-          (r) => r.id === selectedRequestId
-        );
+        const existingRequest = MOCK_CLIENT_REQUESTS.find(r => r.id === selectedRequestId);
         const requestData = isNewRequest ? tempRequestData : existingRequest;
 
         return (
@@ -157,12 +151,8 @@ function App() {
             }}
             onGoToOffer={(request) => {
               const existingOffer = offers.find(o => o.requestId === request.id);
-              if (existingOffer) {
-                setSelectedOfferId(existingOffer.id);
-              } else {
-                const maxOfferId = offers.length > 0 ? Math.max(...offers.map(o => o.id)) : 0;
-                setSelectedOfferId(maxOfferId + 1);
-              }
+              if (existingOffer) setSelectedOfferId(existingOffer.id);
+              else setSelectedOfferId(offers.length > 0 ? Math.max(...offers.map(o => o.id)) + 1 : 1);
               setCurrentView('offer-details');
             }}
           />
@@ -181,8 +171,7 @@ function App() {
         } : null);
 
         const relatedRequest = MOCK_CLIENT_REQUESTS.find(r => r.id === selectedRequestId);
-        if (!relatedRequest) return <div>Related request not found</div>;
-        if (!offerData) return <div>Offer not found</div>;
+        if (!relatedRequest || !offerData) return <div>Data not found</div>;
 
         return (
           <OfferDetails
