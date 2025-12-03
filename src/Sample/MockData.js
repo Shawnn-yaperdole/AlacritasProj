@@ -96,49 +96,35 @@ const _DEFAULT_PROVIDER = {
 export const MOCK_PROVIDER = loadSavedProfile('alacritas_profile_provider', _DEFAULT_PROVIDER);
 
 // ==============================
-// PROVIDER OFFERS (MATCH CLIENT REQUEST STRUCTURE)
+// CLIENT OFFERS (split by status)
 // ==============================
-export const MOCK_PROVIDER_OFFERS = [
-  {
-    id: 1,
-    requestId: 1,
-    title: "Fix Kitchen Sink",
-    client: "John Doe",
-    amount: "$45",
-    status: "pending",
-    description: "Fix the leaking sink in the kitchen.",
-    thumbnail: "https://via.placeholder.com/150x100?text=Sink",
-  },
-  {
-    id: 2,
-    requestId: 2,
-    title: "Garden Cleanup",
-    client: "John Doe",
-    amount: "$70",
-    status: "ongoing",
-    description: "Clean and trim the backyard lawn.",
-    thumbnail: "https://via.placeholder.com/150x100?text=Lawn",
-  },
-  {
-    id: 3,
-    requestId: 3,
-    title: "Ceiling Fan Installation",
-    client: "John Doe",
-    amount: "$60",
-    status: "accepted",
-    description: "Install a new ceiling fan in the living room.",
-    thumbnail: "https://via.placeholder.com/150x100?text=Fan",
-  },
-  {
-    id: 4,
-    requestId: 4,
-    title: "Paint Living Room",
-    client: "John Doe",
-    amount: "$120",
-    status: "pending",
-    description: "Paint the full living room including prep work.",
-    thumbnail: "https://via.placeholder.com/150x100?text=Paint",
-  },
+export const MOCK_CLIENT_PENDING = [
+  { id: 1, requestId: 2, title: "Lawn Mowing", provider: "Jane Smith", amount: "$70", status: "pending", description: "Backyard lawn needs mowing and trimming." },
+  { id: 2, requestId: 4, title: "Paint Living Room", provider: "Jane Smith", amount: "$120", status: "pending", description: "Full living room painting with prep work." },
+];
+
+export const MOCK_CLIENT_ONGOING = [
+  { id: 3, requestId: 1, title: "Fix Leaking Sink", provider: "Jane Smith", amount: "$45", status: "ongoing", description: "Sink in kitchen is leaking. Needs urgent repair." },
+];
+
+export const MOCK_CLIENT_HISTORY = [
+  { id: 4, requestId: 3, title: "Install Ceiling Fan", provider: "Jane Smith", amount: "$60", status: "finished", description: "Ceiling fan installation completed successfully." },
+];
+
+// ==============================
+// PROVIDER OFFERS (split by status)
+// ==============================
+export const MOCK_PROVIDER_PENDING = [
+  { id: 1, requestId: 2, title: "Lawn Mowing", client: "John Doe", amount: "$70", status: "pending", description: "Backyard lawn needs mowing and trimming." },
+  { id: 2, requestId: 4, title: "Paint Living Room", client: "John Doe", amount: "$120", status: "pending", description: "Full living room painting with prep work." },
+];
+
+export const MOCK_PROVIDER_ONGOING = [
+  { id: 3, requestId: 1, title: "Fix Leaking Sink", client: "John Doe", amount: "$45", status: "ongoing", description: "Sink in kitchen is leaking. Needs urgent repair." },
+];
+
+export const MOCK_PROVIDER_HISTORY = [
+  { id: 4, requestId: 3, title: "Install Ceiling Fan", client: "John Doe", amount: "$60", status: "finished", description: "Ceiling fan installation completed successfully." },
 ];
 
 // ==============================

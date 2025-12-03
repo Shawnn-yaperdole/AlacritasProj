@@ -82,11 +82,11 @@ const Offers = ({ role, onViewOfferDetails, newOffer }) => {
   };
 
   const moveOffer = (offer, from, to, setFrom, setTo, newStatus) => {
-    setFrom((list) => list.filter((o) => o.id !== offer.id));
-    setTo((list) => [...list, { ...offer, status: newStatus }]);
+    setFrom(list => list.filter(o => o.id !== offer.id));
+    setTo(list => [...list, { ...offer, status: newStatus }]);
   };
 
-  const filteredData = getCurrentData().filter((item) =>
+  const filteredData = getCurrentData().filter(item =>
     item.title.toLowerCase().includes(filterText.toLowerCase())
   );
 
@@ -94,10 +94,9 @@ const Offers = ({ role, onViewOfferDetails, newOffer }) => {
 
   return (
     <div className="page-container flex flex-col">
-
       {/* Bubble Tabs */}
       <div className="offers-tab-container mb-6">
-        {tabs.map((tab) => (
+        {tabs.map(tab => (
           <button
             key={tab}
             className={`offers-tab ${currentTab === tab ? "active" : ""}`}
@@ -115,7 +114,7 @@ const Offers = ({ role, onViewOfferDetails, newOffer }) => {
           placeholder="Search offers..."
           className="search-input flex-grow min-w-0"
           value={filterText}
-          onChange={(e) => setFilterText(e.target.value)}
+          onChange={e => setFilterText(e.target.value)}
         />
         <button className="action-btn client-filter-btn flex-shrink-0">
           Filter Offers
@@ -124,7 +123,7 @@ const Offers = ({ role, onViewOfferDetails, newOffer }) => {
 
       {/* Offer Cards */}
       <div className="card-list">
-        {filteredData.map((offer) => {
+        {filteredData.map(offer => {
           // Find the corresponding request
           const request = MOCK_CLIENT_REQUESTS.find(r => r.id === offer.requestId);
 
@@ -137,11 +136,9 @@ const Offers = ({ role, onViewOfferDetails, newOffer }) => {
                     {offer.status.toUpperCase()}
                   </span>
                 </div>
-
                 <p className="truncate">
                   {isClient ? `From: ${offer.provider}` : `To: ${offer.client}`}
                 </p>
-
                 <p className="text-sm text-gray-600 truncate">{offer.description}</p>
                 <p className="font-semibold mt-2">{offer.amount}</p>
               </div>
@@ -165,7 +162,6 @@ const Offers = ({ role, onViewOfferDetails, newOffer }) => {
                     >
                       Accept
                     </button>
-
                     <button
                       className="action-btn decline-btn flex-1"
                       onClick={() =>

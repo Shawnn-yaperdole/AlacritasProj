@@ -10,23 +10,21 @@ import Profile from './Global/Profile';
 import ProviderHome from './Provider/ProviderHome';
 import RequestDetails from './Global/RequestDetails';
 import OfferDetails from './Global/OfferDetails';
-
-import { 
-  MOCK_CLIENT_REQUESTS, 
-  MOCK_PROVIDER, 
-  MOCK_CLIENT_PENDING, 
-  MOCK_CLIENT_ONGOING, 
-  MOCK_CLIENT_HISTORY, 
-  MOCK_PROVIDER_PENDING, 
-  MOCK_PROVIDER_ONGOING, 
-  MOCK_PROVIDER_HISTORY 
+import {
+  MOCK_CLIENT_REQUESTS,
+  MOCK_PROVIDER,
+  MOCK_CLIENT_PENDING,
+  MOCK_CLIENT_ONGOING,
+  MOCK_CLIENT_HISTORY,
+  MOCK_PROVIDER_PENDING,
+  MOCK_PROVIDER_ONGOING,
+  MOCK_PROVIDER_HISTORY
 } from './Sample/MockData';
-
 import { saveOfferRealtime, saveRequestRealtime, saveOffer } from './lib/firebase';
 
 function App() {
-  const [userMode, setUserMode] = useState('client'); 
-  const [currentView, setCurrentView] = useState('home'); 
+  const [userMode, setUserMode] = useState('client');
+  const [currentView, setCurrentView] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Track selected request & offer
@@ -46,7 +44,6 @@ function App() {
     ...MOCK_PROVIDER_ONGOING,
     ...MOCK_PROVIDER_HISTORY,
   ]);
-
   const [newOffer, setNewOffer] = useState(null);
 
   const toggleMode = () => {
@@ -77,7 +74,7 @@ function App() {
                 status: 'draft',
                 description: '',
                 thumbnail: '',
-                images: [], 
+                images: [],
               };
               setSelectedRequestId(newId);
               setCurrentView('request-details');
@@ -107,8 +104,8 @@ function App() {
         return (
           <Offers
             role={userMode}
-            offers={offers}          // Pass live offers state
-            newOffer={newOffer}      // Newly sent offer
+            offers={offers} // Pass live offers state
+            newOffer={newOffer} // Newly sent offer
             onViewOfferDetails={(offerId) => {
               setSelectedOfferId(offerId);
               setCurrentView('offer-details');
@@ -123,10 +120,7 @@ function App() {
         const existingRequest = MOCK_CLIENT_REQUESTS.find(
           (r) => r.id === selectedRequestId
         );
-
-        const requestData = isNewRequest
-          ? tempRequestData
-          : existingRequest;
+        const requestData = isNewRequest ? tempRequestData : existingRequest;
 
         return (
           <RequestDetails
@@ -164,10 +158,13 @@ function App() {
       case 'offer-details': {
         const existingOffer = offers.find(o => o.id === selectedOfferId);
         const isNewOffer = !existingOffer && userMode === 'provider';
-        const offerData = existingOffer || (isNewOffer
-          ? { id: selectedOfferId, description: '', amount: '', provider: MOCK_PROVIDER, requestId: selectedRequestId }
-          : null
-        );
+        const offerData = existingOffer || (isNewOffer ? {
+          id: selectedOfferId,
+          description: '',
+          amount: '',
+          provider: MOCK_PROVIDER,
+          requestId: selectedRequestId
+        } : null);
 
         const relatedRequest = MOCK_CLIENT_REQUESTS.find(r => r.id === selectedRequestId);
         if (!relatedRequest) return <div>Related request not found</div>;
@@ -194,8 +191,23 @@ function App() {
       }
 
       default:
-        return userMode === 'client' ? <ClientHome onViewDetails={(id) => { setIsNewRequest(false); setSelectedRequestId(id); setCurrentView('request-details'); }} />
-                                      : <ProviderHome onViewDetails={(id) => { setIsNewRequest(false); setSelectedRequestId(id); setCurrentView('request-details'); }} />;
+        return userMode === 'client' ? (
+          <ClientHome
+            onViewDetails={(id) => {
+              setIsNewRequest(false);
+              setSelectedRequestId(id);
+              setCurrentView('request-details');
+            }}
+          />
+        ) : (
+          <ProviderHome
+            onViewDetails={(id) => {
+              setIsNewRequest(false);
+              setSelectedRequestId(id);
+              setCurrentView('request-details');
+            }}
+          />
+        );
     }
   };
 
@@ -208,11 +220,9 @@ function App() {
         currentView={currentView}
         setCurrentView={setCurrentView}
       />
-
       <main className="main w-full flex-1">
         {renderContent()}
       </main>
-
       <Menu
         isOpen={isMenuOpen}
         close={() => setIsMenuOpen(false)}

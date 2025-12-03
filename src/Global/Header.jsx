@@ -2,19 +2,26 @@
 import React from 'react';
 
 const Header = ({ userMode, toggleMode, setIsMenuOpen, currentView, setCurrentView }) => {
-  // Dynamic color based on user mode
   const themeColor = userMode === 'client' ? 'var(--primary-client)' : 'var(--primary-provider)';
+
+  const navItems = [
+    { key: 'home', label: 'Home', icon: '🏠' },
+    { key: 'messages', label: 'Messages', icon: '💬' },
+    { key: 'offers', label: 'Offers', icon: '📄' },
+    { key: 'profile', label: 'Profile', icon: '👤' },
+  ];
 
   return (
     <header
-      className="header w-full flex items-center justify-between"
-      style={{
-        borderBottom: 'none',
-        backgroundColor: 'var(--white)',
-      }}
+      className="
+        header w-full flex items-center justify-between
+        px-4 py-2
+        fixed z-50 bg-white
+        md:static md:flex-row
+      "
     >
-      {/* Logo */}
-      <div className="flex items-center gap-4">
+      {/* Desktop Logo */}
+      <div className="hidden md:flex items-center gap-4">
         <div className="logo text-lg font-bold" style={{ color: themeColor }}>
           Alacritas{' '}
           <small className="text-gray-700">
@@ -23,30 +30,53 @@ const Header = ({ userMode, toggleMode, setIsMenuOpen, currentView, setCurrentVi
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 flex justify-center gap-4 overflow-x-auto">
-        {['home', 'messages', 'offers', 'profile'].map((view) => (
+      {/* Nav Buttons */}
+      <nav className="flex-1 flex items-center justify-around md:justify-center w-full">
+        {navItems.map((item) => (
           <button
-            key={view}
-            className="nav-btn px-3 py-1 font-medium border-b-2 transition-colors"
-            onClick={() => setCurrentView(view)}
+            key={item.key}
+            onClick={() => setCurrentView(item.key)}
+            className="
+              nav-btn flex flex-col items-center justify-center
+              px-2 py-1 transition-all
+            "
             style={{
-              color: currentView === view ? themeColor : '#666',
-              borderBottom: currentView === view ? `3px solid ${themeColor}` : '3px solid transparent',
-              fontWeight: currentView === view ? 'bold' : 'normal',
+              color: currentView === item.key ? themeColor : '#666',
+              borderBottom:
+                currentView === item.key
+                  ? `3px solid ${themeColor}`
+                  : '3px solid transparent',
             }}
           >
-            {view.charAt(0).toUpperCase() + view.slice(1)}
+            {/* Icon (shown on mobile & desktop) */}
+            <span className="icon-only text-2xl md:hidden">{item.icon}</span>
+            {/* Label (desktop only) */}
+            <span className="label-text hidden md:block text-base font-medium">
+              {item.label}
+            </span>
           </button>
         ))}
       </nav>
 
-      {/* Right controls: Switch mode & Menu */}
+      {/* Switch + Menu */}
       <div className="flex items-center gap-3">
-        <button className="switch-btn" onClick={toggleMode}>
-          Switch to {userMode === 'client' ? 'Provider' : 'Client'}
+        {/* Switch Button */}
+        <button
+          className="switch-btn"
+          onClick={toggleMode}
+          style={{ color: themeColor }}
+        >
+          <span className="hidden md:inline">
+            Switch to {userMode === 'client' ? 'Provider' : 'Client'}
+          </span>
+          <span className="md:hidden">🔄</span> {/* Mobile icon only */}
         </button>
-        <button className="menu-btn" onClick={() => setIsMenuOpen(true)}>
+
+        {/* Menu Button */}
+        <button
+          className="menu-btn"
+          onClick={() => setIsMenuOpen(true)}
+        >
           ☰
         </button>
       </div>

@@ -25,8 +25,10 @@ const OfferDetails = ({
       ? MOCK_PROVIDER
       : offerData.provider || MOCK_PROVIDER;
 
-  const verifiedSkills = provider.skills?.filter((s) => s.verified).map((s) => s.name) || [];
-  const unverifiedSkills = provider.skills?.filter((s) => !s.verified).map((s) => s.name) || [];
+  const verifiedSkills =
+    provider.skills?.filter(s => s.verified).map(s => s.name) || [];
+  const unverifiedSkills =
+    provider.skills?.filter(s => !s.verified).map(s => s.name) || [];
 
   // ---------- CLIENT ACTIONS ----------
   const handleAcceptOffer = () => {
@@ -62,13 +64,19 @@ const OfferDetails = ({
         timestamp: new Date().toISOString(),
       };
 
-      if (saveOfferRealtime) await saveOfferRealtime(offerId, payload);
-      if (saveOffer) await saveOffer(offerId, payload);
-
-      setSaveMessage("Offer sent successfully!");
-      alert("Offer sent successfully!");
-
-      if (onBackToProviderHome) onBackToProviderHome(payload);
+      try {
+        // Choose ONE system only
+        await saveOfferRealtime(offerId, payload); // OR await saveOffer(offerId, payload);
+        setSaveMessage("Offer sent successfully!");
+        alert("Offer sent successfully!");
+        if (onBackToProviderHome) onBackToProviderHome(payload);
+      } catch (err) {
+        console.error("Offer save failed:", err);
+        setSaveMessage("Failed to send offer");
+        alert("Failed to send offer. See console for details.");
+      } finally {
+        setIsSaving(false);
+      }
     } catch (err) {
       console.error(err);
       setSaveMessage("Failed to send offer");
@@ -89,7 +97,6 @@ const OfferDetails = ({
     <div className="page-container flex flex-col space-y-6 p-4">
       {/* Offer Info */}
       <h2 className="text-2xl font-bold">{offerData.title}</h2>
-
       <div className="flex flex-col md:flex-row gap-6">
         {/* Provider Info */}
         <div className="od-card flex flex-col items-center p-4 gap-2 w-full md:w-1/3">
@@ -123,7 +130,7 @@ const OfferDetails = ({
               <textarea
                 className="od-textarea"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={e => setDescription(e.target.value)}
               />
             ) : (
               <p>{description}</p>
@@ -134,7 +141,7 @@ const OfferDetails = ({
               <input
                 className="od-input"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                onChange={e => setPrice(e.target.value)}
               />
             ) : (
               <p className="font-bold">{price}</p>

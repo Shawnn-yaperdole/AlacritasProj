@@ -18,17 +18,17 @@ const RequestCard = ({ request, onViewDetails, onSendOffer }) => (
     <img
       src={request.thumbnail}
       alt={request.title}
-      className="w-full h-36 object-cover rounded-lg mb-3"
+      className="w-full max-h-35 object-cover rounded-lg mb-3"
     />
     <div className="flex-1 flex flex-col space-y-1">
-      <h3 className="font-semibold text-lg line-clamp-1" title={request.title}>
+      <h3 className="font-semibold text-lg truncate" title={request.title}>
         {request.title}
       </h3>
-      <span className="tag line-clamp-1">{request.type}</span>
-      <p className="text-gray-700 line-clamp-1" title={request.location}>
+      <span className="tag truncate">{request.type}</span>
+      <p className="text-gray-700 truncate text-sm" title={request.location}>
         {request.location}
       </p>
-      <p className="text-gray-500 text-sm">{`Posted: ${request.date}`}</p>
+      <p className="text-gray-500 text-xs">{`Posted: ${request.date}`}</p>
 
       <button
         className="action-btn client-view-btn mt-auto w-full py-2 text-sm"
