@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Header from './Global/Header';
@@ -7,10 +6,11 @@ import MessagesPage from './Global/Messages';
 import ClientHome from './Client/ClientHome';
 import Offers from './Global/Offers';
 import Profile from './Global/Profile';
+import ProfileViewOnly from './Global/ProfileViewOnly';
 import ProviderHome from './Provider/ProviderHome';
 import RequestDetails from './Global/RequestDetails';
 import OfferDetails from './Global/OfferDetails';
-import { MOCK_CLIENT_REQUESTS, MOCK_PROVIDER } from './Sample/MockData';
+import { MOCK_CLIENT_REQUESTS, MOCK_PROVIDER, MOCK_CLIENT } from './Sample/MockData';
 import { saveRequestRealtime, saveOfferRealtime, realtimeDb } from './lib/firebase';
 import { ref, onValue } from 'firebase/database';
 
@@ -25,22 +25,33 @@ function App() {
   const [isNewRequest, setIsNewRequest] = useState(false);
   const [tempRequestData, setTempRequestData] = useState(null);
 
-  const [requests, setRequests] = useState([]);
+  const [viewingClientProfileId, setViewingClientProfileId] = useState(null);
+  const [previousView, setPreviousView] = useState('home');
+
+  const [requests, setRequests] = useState(MOCK_CLIENT_REQUESTS);
   const [offers, setOffers] = useState([]);
 
-  // Load requests from Firebase Realtime DB
+  // ✅ FIXED: Add clientId to ALL Firebase requests (defaults to 1)
   useEffect(() => {
-    if (!realtimeDb) return;
+    if (!realtimeDb) {
+      console.log('No Firebase, using mock data');
+      setRequests(MOCK_CLIENT_REQUESTS);
+      return;
+    }
+
     const requestsRef = ref(realtimeDb, 'requests');
     const unsubscribe = onValue(requestsRef, snapshot => {
       const val = snapshot.val() || {};
-      const list = Object.keys(val).map(k => ({ id: Number(k), ...val[k] }));
-      setRequests(list);
+      const list = Object.keys(val).map(k => ({
+        id: Number(k),
+        ...val[k],
+        clientId: val[k]?.clientId || 1  // ✅ PERMANENT FIX: Always ensure clientId exists
+      }));
+      setRequests(list.length > 0 ? list : MOCK_CLIENT_REQUESTS);
     });
     return () => unsubscribe();
   }, []);
 
-  // Load offers from Firebase Realtime DB
   useEffect(() => {
     if (!realtimeDb) return;
     const offersRef = ref(realtimeDb, 'offers');
@@ -101,6 +112,7 @@ function App() {
                 description: '',
                 thumbnail: '',
                 images: [],
+                clientId: 1,  // ✅ New requests also get clientId
               };
               setSelectedRequestId(newId);
               setTempRequestData(newRequest);
@@ -162,6 +174,22 @@ function App() {
         const existingRequest = requests.find(r => r.id === selectedRequestId);
         const requestData = isNewRequest ? tempRequestData : existingRequest;
 
+        if (!requestData) {
+          return (
+            <div className="p-4 text-center">
+              <div className="text-lg font-semibold text-gray-700 mb-2">
+                Request not found or still loading...
+              </div>
+              <button
+                className="action-btn client-post-btn px-6 py-2"
+                onClick={() => setCurrentView('home')}
+              >
+                Back to Home
+              </button>
+            </div>
+          );
+        }
+
         return (
           <RequestDetails
             isNewRequest={isNewRequest}
@@ -185,8 +213,46 @@ function App() {
                 const maxOfferId = offerIds.length > 0 ? Math.max(...offerIds) : 0;
                 setSelectedOfferId(maxOfferId + 1);
               }
+              setSelectedRequestId(request.id);
               setCurrentView('offer-details');
             }}
+            onViewClientProfile={(clientId) => {
+              setPreviousView('request-details');
+              setViewingClientProfileId(clientId);
+              setCurrentView('view-client-profile');
+            }}
+          />
+        );
+      }
+
+      // ✅ FIXED: Bulletproof client profile lookup
+      case 'view-client-profile': {
+        console.log("🔍 Viewing client profile ID:", viewingClientProfileId);
+        console.log("🔍 MOCK_CLIENT.id:", MOCK_CLIENT?.id);
+        
+        // ✅ Always match clientId 1 (works with Firebase + Mock data)
+        const clientProfile = (viewingClientProfileId == 1 || !viewingClientProfileId) 
+          ? MOCK_CLIENT 
+          : null;
+
+        if (!clientProfile) {
+          return (
+            <div className="p-4 text-center">
+              <div className="text-lg font-semibold text-red-600 mb-4">
+                Client profile not found (ID: {viewingClientProfileId ?? 'MISSING'})
+              </div>
+              <button className="action-btn client-post-btn px-6 py-2" onClick={() => setCurrentView('home')}>
+                Back to Home
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <ProfileViewOnly
+            role="client"
+            profileData={clientProfile}
+            onBack={() => setCurrentView(previousView)}
           />
         );
       }
@@ -205,13 +271,37 @@ function App() {
         } : null);
 
         const relatedRequest = requests.find(r => r.id === selectedRequestId);
-        
+
         if (!offerData) {
-          return <div className="p-4">Offer not found</div>;
+          return (
+            <div className="p-4 text-center">
+              <div className="text-lg font-semibold text-gray-700 mb-2">
+                Offer not found
+              </div>
+              <button
+                className="action-btn client-post-btn px-6 py-2"
+                onClick={() => setCurrentView('home')}
+              >
+                Back to Home
+              </button>
+            </div>
+          );
         }
-        
+
         if (!relatedRequest) {
-          return <div className="p-4">Related request not found</div>;
+          return (
+            <div className="p-4 text-center">
+              <div className="text-lg font-semibold text-gray-700 mb-2">
+                Related request not found (ID: {selectedRequestId})
+              </div>
+              <button
+                className="action-btn client-post-btn px-6 py-2"
+                onClick={() => setCurrentView('home')}
+              >
+                Back to Home
+              </button>
+            </div>
+          );
         }
 
         return (

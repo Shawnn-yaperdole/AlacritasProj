@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.17",
     "@tailwindcss/vite": "^4.1.17",
+    "ethers": "^6.16.0",
     "firebase": "^12.6.0",
     "leaflet": "^1.9.4",
     "react": "^19.2.0",

@@ -1,17 +1,29 @@
-// src/Global/RequestDetails.jsx
-import React, { useState } from "react";
+// src/Global/RequestDetails.jsx - FULL CODE WITH WORKING MAPS
+import React, { useState, useEffect } from "react";
 import { uploadFileToCloudinary } from "../lib/cloudinary";
 import { saveRequest, saveRequestRealtime } from "../lib/firebase";
 import { deleteRequest, deleteRequestRealtime } from "../lib/firebase";
 import { MOCK_CLIENT_REQUESTS } from "../Sample/MockData";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Fix default Leaflet marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewRequest, onGoToOffer, onViewClientProfile}) => {
-  const [title, setTitle] = useState(requestData.title || "");
-  const [type, setType] = useState(requestData.type || "");
-  const [location, setLocation] = useState(requestData.location || "");
-  const [description, setDescription] = useState(requestData.description || "");
-  const [thumbnail, setThumbnail] = useState(requestData.thumbnail || "");
-  const initialAdditional = (requestData.images || []).map((src) => ({ src }));
+  const [title, setTitle] = useState(requestData?.title || "");
+  const [type, setType] = useState(requestData?.type || "");
+  const [location, setLocation] = useState(requestData?.location || "");
+  const [description, setDescription] = useState(requestData?.description || "");
+  const [thumbnail, setThumbnail] = useState(requestData?.thumbnail || "");
+  const [selectedLatLon, setSelectedLatLon] = useState({ lat: 16.4023, lon: 120.5960 }); // ✅ MAP STATE
+  const initialAdditional = (requestData?.images || []).map((src) => ({ src }));
   const [additionalImages, setAdditionalImages] = useState(initialAdditional);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -108,6 +120,7 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
         description,
         thumbnail: thumbnailUrl,
         images: imagesUrls,
+        latLon: selectedLatLon, // ✅ Save map coordinates
       };
 
       // Step 3: Assign ID for new requests
@@ -239,8 +252,25 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Barangay/City, Street, Specific address"
                 />
-                <div className="rd-map-container">
-                  [Google Maps location picker placeholder]
+                {/* ✅ FULLY FUNCTIONAL LEAFLET MAP */}
+                <div className="rd-map-container w-full h-64 border rounded relative">
+                  <MapContainer 
+                    center={[selectedLatLon.lat, selectedLatLon.lon]} 
+                    zoom={14} 
+                    style={{ height: "100%", width: "100%" }}
+                    className="leaflet-map-container"
+                  >
+                    <TileLayer 
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    <Marker position={[selectedLatLon.lat, selectedLatLon.lon]} />
+                    <MapClickRequest 
+                      setLocation={setLocation}
+                      setSelectedLatLon={setSelectedLatLon}
+                    />
+                    <MapUpdaterRequest coords={selectedLatLon} />
+                  </MapContainer>
                 </div>
               </>
             ) : (
@@ -264,13 +294,13 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
           {userRole === "provider" && (
             <div className="flex flex-wrap gap-4 mt-2">
               <button className="action-btn btn-secondary btn-accent px-4 py-2"
-              onClick={() => onGoToOffer && onGoToOffer(requestData)}
+                onClick={() => onGoToOffer && onGoToOffer(requestData)}
               >
                 Send Offer
               </button>
 
               <button className="action-btn btn-secondary px-4 py-2"
-              onClick={() => onViewClientProfile && onViewClientProfile(requestData.clientId)}
+                onClick={() => onViewClientProfile && onViewClientProfile(requestData.clientId)}
               >
                 View Client Profile
               </button>
@@ -383,6 +413,42 @@ const RequestDetails = ({ requestData, userRole, onBackToClientHome, isNewReques
       )}
     </div>
   );
+};
+
+// ---------- Map Components ----------
+const MapClickRequest = ({ setLocation, setSelectedLatLon }) => {
+  useMapEvents({
+    click: async (e) => {
+      const { lat, lng } = e.latlng;
+      
+      // Reverse geocode to get barangay
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&addressdetails=1`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const addr = data.address || {};
+        const barangay = addr.village || addr.suburb || addr.hamlet || addr.city || 'Baguio City';
+        
+        const newLocation = `${barangay}`;
+        setLocation(newLocation);
+        setSelectedLatLon({ lat, lon: lng });
+      } catch (err) {
+        setLocation(`Lat: ${lat.toFixed(4)}, Lon: ${lng.toFixed(4)}`);
+        setSelectedLatLon({ lat, lon: lng });
+      }
+    },
+  });
+  return null;
+};
+
+const MapUpdaterRequest = ({ coords }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (coords) {
+      map.setView([coords.lat, coords.lon], 14, { animate: true });
+    }
+  }, [coords, map]);
+  return null;
 };
 
 // ---------- Modal Component ----------
